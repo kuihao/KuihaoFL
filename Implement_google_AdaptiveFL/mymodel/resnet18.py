@@ -5,7 +5,7 @@ from tensorflow.keras.layers import (
 from tensorflow.keras import Input, Model, layers, models, Sequential 
 
 def Conv2D_with_BN(input_tensor, FilterNum, FeatureMapSize, 
-                   PaddingMode, StrideLength):
+                   PaddingMode, StrideLength, name=None):
     '''#### The basic convolution layer:
     [arXiv:1512.03385, P4]
     We adopt batch normalization(BN)
@@ -14,20 +14,21 @@ def Conv2D_with_BN(input_tensor, FilterNum, FeatureMapSize,
     x = Conv2D(filters=FilterNum,
                      kernel_size=FeatureMapSize,
                      padding=PaddingMode,
-                     strides=StrideLength)(input_tensor)
+                     strides=StrideLength,
+                     name=name)(input_tensor)
     x = BatchNormalization()(x)
     return x
 
-def ResidualBlock(input_tensor, FilterNum, StrideLength, shortcut_bool=False):
+def ResidualBlock(input_tensor, FilterNum, StrideLength, 
+                  shortcut_shape_transform = False, name=None):
     '''Fully obedience to the paper for restoration'''
     x = Conv2D_with_BN(input_tensor, FilterNum, FeatureMapSize=(3,3),
-                       PaddingMode='same', StrideLength=StrideLength)
+                       PaddingMode='same', StrideLength=StrideLength, name=name)
     x = Activation('relu')(x)
     x = Conv2D_with_BN(x, FilterNum, FeatureMapSize=(3,3), 
                        PaddingMode='same', StrideLength=1)
 
-    # [!!!] shortcut kernel size? x -> Stride!=1
-    if shortcut_bool:
+    if shortcut_shape_transform:
         identity = Conv2D_with_BN(input_tensor, FilterNum, FeatureMapSize=(1,1), 
                                   PaddingMode='same', StrideLength=StrideLength)
         x = add([x,identity])
@@ -40,23 +41,23 @@ def ResidualBlock(input_tensor, FilterNum, StrideLength, shortcut_bool=False):
 def ResNet18(input_shape, ClassNum):
   '''Keras functional api version'''
   # Step 1. Create a input node
-  inputs = Input(shape=input_shape, name="InputImages")
+  inputs = Input(shape=input_shape, name="Input_layer")
   
   # Steop 2. Add more layers
   # Conv1
-  x = Conv2D_with_BN(inputs,64,(7,7),'same',2)
+  x = Conv2D_with_BN(inputs,64,(7,7),'same',2,name="Conv1")
   # Conv2
-  x = MaxPooling2D(pool_size=(3,3), strides=2, padding='same')(x)
-  x = ResidualBlock(x,64,1,True) #True?
+  x = MaxPooling2D(pool_size=(3,3), strides=2, padding='same',name="Conv2")(x)
+  x = ResidualBlock(x,64,1) #True?
   x = ResidualBlock(x,64,1)
   # Conv3
-  x = ResidualBlock(x,128,2,True)
+  x = ResidualBlock(x,128,2,True,name="Conv3")
   x = ResidualBlock(x,128,1)
   # Conv4
-  x = ResidualBlock(x,256,2,True)
+  x = ResidualBlock(x,256,2,True,name="Conv4")
   x = ResidualBlock(x,256,1)
   # Conv5
-  x = ResidualBlock(x,512,2,True)
+  x = ResidualBlock(x,512,2,True,name="Conv5")
   x = ResidualBlock(x,512,1)
   # Average Pool 1x1
   x = layers.GlobalAveragePooling2D()(x)
@@ -64,7 +65,7 @@ def ResNet18(input_shape, ClassNum):
   #x = layers.Dropout(0.5)(x) # toy
 
   # Step 3. Create a output node
-  outputs = layers.Dense(ClassNum)(x) #activation="softmax"
+  outputs = layers.Dense(ClassNum, name="Output_layer")(x) #activation="softmax"
 
   # Step 4. Create a  Model to specifying its 
   # inputs and outputs in the graph of layers.
