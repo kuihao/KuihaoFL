@@ -1,6 +1,6 @@
 import tensorflow as tf
 import numpy as np
-from mymodel.resnet18 import myResNet, ResNet18_Dan
+from mymodel.resnet18 import myResNet #, ResNet18_Dan
 from mypkg.gpu.limitGPU import setGPU
 setGPU(mode=1,gpus=tf.config.list_physical_devices('GPU'))
 np.random.seed(2021)
