@@ -100,7 +100,6 @@ class MyFedAdam(FedOpt):
         self.delta_t: Optional[Weights] = None
         self.m_t: Optional[Weights] = None
         self.v_t: Optional[Weights] = None
-        #self.delta_m: Optional[Weights] = None
 
     def __repr__(self) -> str:
         rep = f"FedAdam(accept_failures={self.accept_failures})"
@@ -130,7 +129,7 @@ class MyFedAdam(FedOpt):
         #    self.delta_t = [np.zeros_like(x) for x in self.current_weights]
 
         if not self.m_t:
-            self.m_t = [np.zeros_like(x) for x in self.current_weights]
+            self.m_t = [np.zeros_like(x) for x in self.delta_t]
 
         self.m_t = [
             self.beta_1 * x + (1.0 - self.beta_1) * y

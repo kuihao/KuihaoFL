@@ -121,7 +121,7 @@ class MyFedYogi(FedOpt):
         self.delta_t = aggregated_updates
 
         if not self.m_t:
-            self.m_t = [np.zeros_like(x) for x in self.current_weights]
+            self.m_t = [np.zeros_like(x) for x in self.delta_t]
         
         self.m_t = [
             self.beta_1 * x + (1.0 - self.beta_1) * y
