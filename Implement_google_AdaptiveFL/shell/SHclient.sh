@@ -18,4 +18,4 @@ screen -S client-7 -dm bash -c 'python client.py -c 7 --cpu;echo "**end of file8
 sleep 2s
 screen -S client-8 -dm bash -c 'python client.py -c 8 --cpu;echo "**end of file9**";$SHELL'
 sleep 2s
-screen -S client-9 -dm bash -c 'python client.py -c 9 --cpu;echo "**end of file10**";$SHELL'
+screen -S client-9 -m bash -c 'python client.py -c 9 --cpu;echo "**end of file10**";$SHELL'
