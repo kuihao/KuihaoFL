@@ -1,7 +1,4 @@
-1. 減少記憶體對 dataset 的儲存負擔
-> 如 server 的 get_eval_fn() 調用 function 時才匯入資料，
-> 因使用 funtion 所以變數用完就丟
-> 檢查所有需要 load data 的地方是否用此方式撰寫
+1. 
 
 2. Server 的 loss acc 聚合計算，嘗試用 tensor 給 GPU 計算
 
