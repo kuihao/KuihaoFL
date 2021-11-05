@@ -55,6 +55,6 @@ def ModelNameGenerator(UniqueName=None):
     print("-------------")
     now_time = datetime.now() # current date and time
     time_str = now_time.strftime("%m_%d_%Y__%H_%M_%S")
-    '' if UniqueName is None else UniqueName
+    UniqueName='' if UniqueName is None else UniqueName
     model_name = time_str+"_"+UniqueName
     return model_name

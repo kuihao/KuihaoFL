@@ -1,5 +1,5 @@
 import os
-os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+#os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np 
 import flwr as fl
@@ -14,20 +14,6 @@ from mypkg import (
     MyFedAdam
 )
 from mymodel import CNN_Model, myResNet
-
-# --------
-# [Hyperparemeter]
-# --------
-SEED = 2021
-'''fix random seed'''
-SAVE = False
-'''(bool) save log or not'''
-model_input_shape = (32,32,3)
-model_class_number = 10
-HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
-#CNN_Model(model_input_shape,model_class_number)
-#myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_Aggregation = FedAvg
 
 # --------
 # [Global varables]
@@ -46,7 +32,7 @@ Testing_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accurac
 # --------
 args = ServerArg()
 model_name = ModelNameGenerator(args.name)
-print("This model name:", model_name)
+print(f"*** This model name: {model_name} ***")
 
 # --------
 # [Hardware setting] CPU only or limit the GPU usage
@@ -55,11 +41,25 @@ if args.cpu:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 else:
-    setGPU(mode=2) # gpus=tf.config.list_physical_devices('GPU')
+    setGPU(mode=1) # gpus=tf.config.list_physical_devices('GPU')
 
 import tensorflow as tf
+
+# --------
+# [Hyperparemeter]
+# --------
+SEED = 2021
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
+'''fix random seed'''
+SAVE = False
+'''(bool) save log or not'''
+model_input_shape = (32,32,3)
+model_class_number = 10
+HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
+#CNN_Model(model_input_shape,model_class_number)
+#myResNet().ResNet18(model_input_shape,model_class_number)
+HyperSet_Aggregation = FedAvg
 
 # --------
 # [Main]

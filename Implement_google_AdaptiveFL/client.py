@@ -1,26 +1,10 @@
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+
+
 import flwr as fl
 import numpy as np
-from mypkg import (
-    setGPU,
-    ClientArg,
-    FixClientSample,
-)
-from mymodel import CNN_Model, myResNet
-
-# --------
-# [Hyperparemeter]
-# --------
-SEED = 2021
-'''fix random seed'''
-#SAVE = False
-'''(bool) save log or not'''
-model_input_shape = (32,32,3)
-model_class_number = 10
-HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
-#CNN_Model(model_input_shape,model_class_number)
-#myResNet().ResNet18(model_input_shape,model_class_number)
+from mypkg import ClientArg, FixClientSample
 
 # --------
 # [Commandline Args]
@@ -31,15 +15,29 @@ args = ClientArg()
 # [Hardware setting] CPU only or limit the GPU usage
 # --------
 if args.cpu:
+    print("set cpu")
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 else:
-    setGPU(mode=2) # gpus=tf.config.list_physical_devices('GPU')
-
+    from mypkg import setGPU
+    setGPU(mode=1) # gpus=tf.config.list_physical_devices('GPU')
 import tensorflow as tf
-# from tensorflow.keras import datasets, Input, Model, layers, models, Sequential
+
+# --------
+# [Hyperparemeter]
+# --------
+SEED = 2021
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
+'''fix random seed'''
+#SAVE = False
+'''(bool) save log or not'''
+model_input_shape = (32,32,3)
+model_class_number = 10
+from mymodel import CNN_Model, myResNet
+HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
+#CNN_Model(model_input_shape,model_class_number)
+#myResNet().ResNet18(model_input_shape,model_class_number)
 
 # --------
 # [Main]
@@ -64,13 +62,17 @@ def main() -> None:
 # --------
 # [Load local dataset]
 # --------
-def load_dataset(idx: int):
+def load_EC10(idx: int):
     x_train = np.load("EC10_IID/EC10_client_"+str(idx)+"_x.npy")
     y_train = np.load("EC10_IID/EC10_client_"+str(idx)+"_y.npy")
-    x_train, y_train = x_train / 255.0, y_train / 255.0
-    print(y_train.shape)
+    x_train = x_train / 255.0
     if len(y_train.shape)>1:
-        #x_train = x_train / 255.0
+        y_train = tf.squeeze(y_train,axis=1)
+    return (x_train,y_train)
+def load_cifar10():
+    (x_train,y_train), _ = tf.keras.datasets.cifar10.load_data()
+    x_train = x_train / 255.0
+    if len(y_train.shape)>1:
         y_train = tf.squeeze(y_train,axis=1)
     return (x_train,y_train)
 
@@ -102,7 +104,8 @@ class MyClient(fl.client.NumPyClient):
         print("\n*** 本次為 round: ",config["rnd"]," ***\n") # Use round to pair sampling IDs
 
         # 依據 rnd 對應 sample id 挑選對應 client 的 dataset
-        (self.x_train,self.y_train) = load_dataset(self.SampleID[rnd])
+        #(self.x_train,self.y_train) = load_EC10(self.SampleID[rnd])
+        (self.x_train,self.y_train) = load_cifar10()
 
         # Train the model using hyperparameters from config
         # (依 Server-side 的 hyperparameters 進行訓練)
