@@ -21,3 +21,4 @@ if __name__ == '__main__':
     p.start()
     p.join()  # Add this if you want to wait for the process to finish.
 ```
+4. 匯入原model參數、持續原model訓練: 待完成
