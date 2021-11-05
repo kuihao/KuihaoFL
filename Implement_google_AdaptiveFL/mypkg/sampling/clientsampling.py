@@ -1,3 +1,21 @@
+import random
+import numpy as np
+
+def DynamicClientSample(rounds = 40, client_range=100, 
+                        training_client_number=10, 
+                        sample_rate=0.1, client_id=0,
+                        seed=2021):
+    client_id_list = [i for i in range(client_range)]
+    random.seed(seed)
+    client_sample_list = np.zeros((training_client_number,client_range))
+    for i in range(training_client_number):
+        for j in range(client_range):
+            client_sample_list[i,j] = random.sample(client_id_list, 1)[0]
+    
+    client_sample_list = client_sample_list.astype(int).tolist()
+    return client_sample_list[client_id]
+    
+
 def FixClientSample(client_number=10):
     '''sample rate = 10%, returns: [list of sample IDs]'''
     if client_number == 10:
