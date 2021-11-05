@@ -1,10 +1,8 @@
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
-
-import flwr as fl
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import numpy as np
-from mypkg import ClientArg, FixClientSample
+import flwr as fl
+from mypkg import ClientArg, FixClientSample, DynamicClientSample
 
 # --------
 # [Commandline Args]
@@ -15,13 +13,13 @@ args = ClientArg()
 # [Hardware setting] CPU only or limit the GPU usage
 # --------
 if args.cpu:
-    print("set cpu")
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 else:
-    from mypkg import setGPU
-    setGPU(mode=1) # gpus=tf.config.list_physical_devices('GPU')
+    from mypkg.TF import setGPU
+    setGPU(mode=1) # Dataset size 會影響 GPU memory 需求
 import tensorflow as tf
+from mypkg.TF import CNN_Model, myResNet
 
 # --------
 # [Hyperparemeter]
@@ -30,11 +28,8 @@ SEED = 2021
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
 '''fix random seed'''
-#SAVE = False
-'''(bool) save log or not'''
 model_input_shape = (32,32,3)
 model_class_number = 10
-from mymodel import CNN_Model, myResNet
 HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
@@ -50,12 +45,20 @@ def main() -> None:
                   tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), 
                   metrics=["accuracy", 'top_k_categorical_accuracy'])
 
-    # Load local dataset
-    # A subset of Extend-CIFAR-10, 
-    SampleIDs = FixClientSample(100)
-
     # Start Flower client
-    client = MyClient(model, '', '', '', '', args.client, SampleIDs[args.client])
+
+    ## single client wuth original dataset test
+    #(x_train,y_train) = load_cifar10()
+    #(x_train,y_train) = load_EC10_client10
+    #client = MyClient(model, x_train, y_train, '', '', args.client, SampleIDs[args.client])
+    
+    ## old version
+    #SampleIDs = FixClientSample(100)
+    #client = MyClient(model, '', '', '', '', args.client, SampleIDs[args.client])
+    
+    ## new auto sampling version
+    SampleIDs = DynamicClientSample(rounds=40, client_id=args.client)
+    client = MyClient(model, '', '', '', '', args.client, SampleIDs)
     #fl.client.start_numpy_client("localhost:8080", client=client) # windows
     fl.client.start_numpy_client("[::]:8080", client=client) # linux
 
@@ -69,6 +72,16 @@ def load_EC10(idx: int):
     if len(y_train.shape)>1:
         y_train = tf.squeeze(y_train,axis=1)
     return (x_train,y_train)
+"""
+def load_EC10_client10(idx: int):
+    '''dataset size = 50k/client'''
+    x_train = np.load("dataset/ec_x_"+str(idx)+".npy")
+    y_train = np.load("dataset/ec_y_"+str(idx)+".npy")
+    x_train = x_train / 255.0
+    if len(y_train.shape)>1:
+        y_train = tf.squeeze(y_train,axis=1)
+    return (x_train,y_train)
+"""
 def load_cifar10():
     (x_train,y_train), _ = tf.keras.datasets.cifar10.load_data()
     x_train = x_train / 255.0
@@ -95,6 +108,7 @@ class MyClient(fl.client.NumPyClient):
     def fit(self, parameters, config):
         """Train parameters on the locally held training set."""
         # Update local model parameters
+        
         self.model.set_weights(parameters)
 
         # Get hyperparameters for this round
@@ -104,8 +118,7 @@ class MyClient(fl.client.NumPyClient):
         print("\n*** 本次為 round: ",config["rnd"]," ***\n") # Use round to pair sampling IDs
 
         # 依據 rnd 對應 sample id 挑選對應 client 的 dataset
-        #(self.x_train,self.y_train) = load_EC10(self.SampleID[rnd])
-        (self.x_train,self.y_train) = load_cifar10()
+        (self.x_train,self.y_train) = load_EC10(self.SampleID[rnd])
 
         # Train the model using hyperparameters from config
         # (依 Server-side 的 hyperparameters 進行訓練)
@@ -128,6 +141,7 @@ class MyClient(fl.client.NumPyClient):
             #"val_accuracy": history.history["val_accuracy"][0]
             "top_k_categorical_accuracy": history.history["top_k_categorical_accuracy"][-1],
         }
+        #tf.keras.backend.clear_session()
         return parameters_prime, num_examples_train, results
 
     def evaluate(self, parameters, config):

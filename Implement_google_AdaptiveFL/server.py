@@ -7,25 +7,11 @@ from flwr.server.strategy import FedAvg, FedYogi, FedAdam, FedAdagrad
 from mypkg import (
     ServerArg, 
     ModelNameGenerator,
-    setGPU,
     secure_mkdir,
     MyFedAdagrad,
     MyFedYogi,
     MyFedAdam
 )
-from mymodel import CNN_Model, myResNet
-
-# --------
-# [Global varables]
-# --------
-Training_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
-'''Clients Training 的聚合結果'''
-Testing_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
-'''[未使用] Clients Testing 的聚合結果'''
-Training_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
-'''[未使用] Server Training 的結果'''
-Testing_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
-'''Server Testing 的結果'''
 
 # --------
 # [Welcome prompt] Make model name
@@ -41,9 +27,11 @@ if args.cpu:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 else:
+    from mypkg.TF import setGPU
     setGPU(mode=1) # gpus=tf.config.list_physical_devices('GPU')
 
 import tensorflow as tf
+from mypkg.TF import CNN_Model, myResNet
 
 # --------
 # [Hyperparemeter]
@@ -62,12 +50,22 @@ HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
 HyperSet_Aggregation = FedAvg
 
 # --------
+# [Global varables]
+# --------
+Training_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+'''Clients Training 的聚合結果'''
+Testing_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+'''[未使用] Clients Testing 的聚合結果'''
+Training_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+'''[未使用] Server Training 的結果'''
+Testing_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+'''Server Testing 的結果'''
+
+# --------
 # [Main]
 # --------
 def main() -> None:
-    # --------
-    # [待修改] 建立 Global model、設定 FL 策略、啟動 Server、儲存 FL 結果
-    # --------
+    """Create Global model, set FL strategy, start Server, save FL results"""
     # Step 1. Build Global Model (建立全域模型)
     model = HyperSet_Model
     optimizer = tf.keras.optimizers.SGD(momentum=0.9)
@@ -79,9 +77,9 @@ def main() -> None:
     strategy = MyAggregation(
         fraction_fit=1.0, # 每一輪參與Training的Client比例
         #fraction_eval=1.0, # 每一輪參與Evaluating的Client比例
-        min_fit_clients=1, # 每一輪參與Training的最少Client連線數量 (與比例衝突時,以此為準)
+        min_fit_clients=10, # 每一輪參與Training的最少Client連線數量 (與比例衝突時,以此為準)
         #min_eval_clients=3, # 每一輪參與Evaluating的最少Client連線數量 (與比例衝突時,以此為準)
-        min_available_clients=1, # 啟動聯合學習之前，Client連線的最小數量
+        min_available_clients=10, # 啟動聯合學習之前，Client連線的最小數量
         
         on_fit_config_fn=fit_config, # 設定 Client-side Training Hyperparameter  
         on_evaluate_config_fn=None, #evaluate_config, # 設定 Client-side Evaluating Hyperparameter
