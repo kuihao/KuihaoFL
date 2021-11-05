@@ -19,14 +19,29 @@ def ServerArg():
                         type=str, required=False,
                         help="If model = 2, input the other checkpoint storage file path.")
     parser.add_argument("--cpu",
-                    action="store_true",  # 引數儲存為 boolean
-                    help="使否只使用CPU? 此為引數為Flag，後方不能再輸入其他內容")
+                        action="store_true",  # saved argument as boolean
+                        help="To use CPU only. This is a Flag, "
+                             "and no other content can be entered after it.")
     args = parser.parse_args()
 
     if args.mode == 1 and args.prior_path is None:
         raise Exception("If model = 1, --prior_path (-pp) is required.")
     elif args.mode == 2 and args.checkpoint_path is None:
         raise Exception("If model = 2, --checkpoint_path (-cp) is required.")
+    return args
+
+def ClientArg():
+    '''To get the client setting from commandline args'''
+    parser = argparse.ArgumentParser(description="Flower Client")
+    parser.add_argument("-c", "--client", 
+                        type=int, choices=range(0, 1000), required=True,
+                        help="from 0 to 1000")
+    parser.add_argument("--cpu",
+                        action="store_true",  # saved argument as boolean
+                        help="To use CPU only. This is a Flag, "
+                             "and no other content can be entered after it.")
+    args = parser.parse_args()
+
     return args
 
 def ModelNameGenerator(UniqueName=None):
