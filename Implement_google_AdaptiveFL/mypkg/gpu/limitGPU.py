@@ -1,7 +1,6 @@
 #import os 
 #os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 
-print("Kuihao: Loading tensorflow in myfun...")
 import tensorflow as tf
 
 def setGPU(mode = 1, gpus = tf.config.list_physical_devices('GPU')):
@@ -25,7 +24,7 @@ def setGPU(mode = 1, gpus = tf.config.list_physical_devices('GPU')):
         try:
             tf.config.set_logical_device_configuration(
                 gpus[0],
-                [tf.config.LogicalDeviceConfiguration(memory_limit=1042)])
+                [tf.config.LogicalDeviceConfiguration(memory_limit=1024)])
             logical_gpus = tf.config.list_logical_devices('GPU')
             print("Kuihao:", len(gpus), "Physical GPUs,", len(logical_gpus), "Logical GPUs")
         except RuntimeError as e:
