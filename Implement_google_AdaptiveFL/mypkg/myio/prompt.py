@@ -22,6 +22,9 @@ def ServerArg():
                         action="store_true",  # saved argument as boolean
                         help="To use CPU only. This is a Flag, "
                              "and no other content can be entered after it.")
+    parser.add_argument("--gpu",
+                        type=int, choices=range(0, 2), required=False,
+                        help="To use specific gpu device")
     args = parser.parse_args()
 
     if args.mode == 1 and args.prior_path is None:
@@ -40,6 +43,9 @@ def ClientArg():
                         action="store_true",  # saved argument as boolean
                         help="To use CPU only. This is a Flag, "
                              "and no other content can be entered after it.")
+    parser.add_argument("--gpu",
+                        type=int, choices=range(0, 2), required=False,
+                        help="To use specific gpu device")
     args = parser.parse_args()
 
     return args

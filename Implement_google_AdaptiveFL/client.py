@@ -1,5 +1,5 @@
 import os
-#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 import numpy as np
 import flwr as fl
 from mypkg import ClientArg, FixClientSample, DynamicClientSample
@@ -16,8 +16,15 @@ if args.cpu:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 else:
-    from mypkg.TF import setGPU
-    setGPU(mode=1) # Dataset size 會影響 GPU memory 需求
+    #from mypkg.TF import setGPU
+    #setGPU(mode=1)
+    if args.gpu is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"]= str(args.gpu)
+        from mypkg.TF import setGPU
+        setGPU(mode=3, device_num=args.gpu)
+    else:
+        from mypkg.TF import setGPU
+        setGPU(mode=1) # Dataset size 會影響 GPU memory 需求
 import tensorflow as tf
 from mypkg.TF import CNN_Model, myResNet
 
@@ -29,10 +36,12 @@ np.random.seed(SEED)
 tf.random.set_seed(SEED)
 '''fix random seed'''
 model_input_shape = (32,32,3)
-model_class_number = 10
-HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
+model_class_number = 10 # This is LABEL 
+HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
+HyperSet_SampleRound = 40
+HyperSet_SampleRange = 100
 
 # --------
 # [Main]
@@ -57,7 +66,11 @@ def main() -> None:
     #client = MyClient(model, '', '', '', '', args.client, SampleIDs[args.client])
     
     ## new auto sampling version
-    SampleIDs = DynamicClientSample(rounds=40, client_id=args.client)
+    SampleIDs = DynamicClientSample(rounds=HyperSet_SampleRound,
+                                    client_range=HyperSet_SampleRange,
+                                    client_id=args.client,
+                                    )
+    print(SampleIDs)
     client = MyClient(model, '', '', '', '', args.client, SampleIDs)
     #fl.client.start_numpy_client("localhost:8080", client=client) # windows
     fl.client.start_numpy_client("[::]:8080", client=client) # linux

@@ -1,5 +1,6 @@
+from enum import Flag
 import os
-#os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
 from typing import Any, Callable, Dict, List, Optional, Tuple
 import numpy as np 
 import flwr as fl
@@ -18,7 +19,7 @@ from mypkg import (
 # --------
 args = ServerArg()
 model_name = ModelNameGenerator(args.name)
-print(f"*** This model name: {model_name} ***")
+print(f"*** This model name: {model_name} ***\n")
 
 # --------
 # [Hardware setting] CPU only or limit the GPU usage
@@ -27,8 +28,15 @@ if args.cpu:
     os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
     os.environ["CUDA_VISIBLE_DEVICES"] = ""
 else:
-    from mypkg.TF import setGPU
-    setGPU(mode=1) # gpus=tf.config.list_physical_devices('GPU')
+    #from mypkg.TF import setGPU
+    #setGPU(mode=1)
+    if args.gpu is not None:
+        os.environ["CUDA_VISIBLE_DEVICES"]= str(args.gpu)
+        from mypkg.TF import setGPU
+        setGPU(mode=3, device_num=args.gpu)
+    else:
+        from mypkg.TF import setGPU
+        setGPU(mode=1) # Dataset size 會影響 GPU memory 需求
 
 import tensorflow as tf
 from mypkg.TF import CNN_Model, myResNet
@@ -37,17 +45,20 @@ from mypkg.TF import CNN_Model, myResNet
 # [Hyperparemeter]
 # --------
 SEED = 2021
+'''fix random seed'''
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
-'''fix random seed'''
+model_input_shape = (32,32,3)
+model_class_number = 10 # This is LABEL 
+
 SAVE = False
 '''(bool) save log or not'''
-model_input_shape = (32,32,3)
-model_class_number = 10
-HyperSet_Model = CNN_Model(model_input_shape,model_class_number)
+HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_Aggregation = FedAvg
+HyperSet_Aggregation = MyFedAdagrad
+HyperSet_client_number = 10
+HyperSet_round = 40
 
 # --------
 # [Global varables]
@@ -71,15 +82,16 @@ def main() -> None:
     optimizer = tf.keras.optimizers.SGD(momentum=0.9)
     model.compile(optimizer, 
                   tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), 
+                  # `from_logits=True` means use softmax as activaction function
                   metrics=["accuracy", 'top_k_categorical_accuracy'])
 
     # Step 2. Make the strategy (制定聯合學習策略)
     strategy = MyAggregation(
         fraction_fit=1.0, # 每一輪參與Training的Client比例
         #fraction_eval=1.0, # 每一輪參與Evaluating的Client比例
-        min_fit_clients=10, # 每一輪參與Training的最少Client連線數量 (與比例衝突時,以此為準)
+        min_fit_clients=HyperSet_client_number, # 每一輪參與Training的最少Client連線數量 (與比例衝突時,以此為準)
         #min_eval_clients=3, # 每一輪參與Evaluating的最少Client連線數量 (與比例衝突時,以此為準)
-        min_available_clients=10, # 啟動聯合學習之前，Client連線的最小數量
+        min_available_clients=HyperSet_client_number, # 啟動聯合學習之前，Client連線的最小數量
         
         on_fit_config_fn=fit_config, # 設定 Client-side Training Hyperparameter  
         on_evaluate_config_fn=None, #evaluate_config, # 設定 Client-side Evaluating Hyperparameter
@@ -89,7 +101,7 @@ def main() -> None:
 
     # Step 3. Run the server with the strategy
     #fl.server.start_server("localhost:8080", config={"num_rounds": 3}, strategy=strategy) #windows
-    fl.server.start_server("[::]:8080", config={"num_rounds": 40}, strategy=strategy) #linux
+    fl.server.start_server("[::]:8080", config={"num_rounds": HyperSet_round}, strategy=strategy) #linux
 
     # [Kuihao addition] Save FL results to numpy-zip
     global Training_result_distributed, Testing_result_centralized
@@ -136,7 +148,7 @@ class MyAggregation(HyperSet_Aggregation):
         f"\n****")
 
         # [Kuihao addition] 保存每一輪 Global Model Weights
-        if SAVE:
+        if SAVE and rnd==HyperSet_round:
             checkpoint_folder = secure_mkdir("ckpoint"+"/"+model_name)
             if aggregated_weights is not None:
                 # Save aggregated_weights
