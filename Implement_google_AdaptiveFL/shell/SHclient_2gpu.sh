@@ -1,6 +1,6 @@
 #!/bin/sh
 # This file is called ~/script.sh
-pkill screen
+#pkill screen
 screen -S client-0 -dm bash -c 'python client.py -c 0 --gpu 0;echo "**end of file1**";$SHELL'
 sleep 2s
 screen -S client-1 -dm bash -c 'python client.py -c 1 --gpu 0;echo "**end of file2**";$SHELL'
