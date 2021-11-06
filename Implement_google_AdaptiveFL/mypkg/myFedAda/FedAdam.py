@@ -109,11 +109,13 @@ class MyFedAdam(FedOpt):
         self,
         rnd: int,
         K_defining_eta: float,
+        K_defining_tau: float,
         results: List[Tuple[ClientProxy, FitRes]],
         failures: List[BaseException],
     ) -> Tuple[Optional[Parameters], Dict[str, Scalar]]:
         """Aggregate fit results using weighted average."""
         self.eta = K_defining_eta
+        self.tau = K_defining_tau
 
         fedavg_parameters_aggregated, metrics_aggregated = super().aggregate_fit(
             rnd=rnd, results=results, failures=failures

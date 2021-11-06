@@ -40,8 +40,8 @@ model_class_number = 10 # This is LABEL
 HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_SampleRound = 40
-HyperSet_SampleRange = 100
+HyperSet_SampleRound = 1000
+HyperSet_SampleRange = 1000
 
 # --------
 # [Main]

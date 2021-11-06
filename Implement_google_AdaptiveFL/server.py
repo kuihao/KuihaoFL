@@ -51,14 +51,16 @@ tf.random.set_seed(SEED)
 model_input_shape = (32,32,3)
 model_class_number = 10 # This is LABEL 
 
-SAVE = False
+SAVE = True
 '''(bool) save log or not'''
 HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
 HyperSet_Aggregation = MyFedAdagrad
+HyperSet_Agg_eta = 1e-3 #1e-3
+HyperSet_Agg_tau = 1e-2
 HyperSet_client_number = 10
-HyperSet_round = 40
+HyperSet_round = 1000
 
 # --------
 # [Global varables]
@@ -127,7 +129,11 @@ class MyAggregation(HyperSet_Aggregation):
     ) -> Optional[fl.common.Weights]:
         '''Override'''
         # Call Parent-class's aggregate_fit()
-        aggregated_weights = super().aggregate_fit(rnd, results, failures) 
+        aggregated_weights = super().aggregate_fit(rnd=rnd,
+                                                   K_defining_eta=HyperSet_Agg_eta, # default: 1e-1
+                                                   K_defining_tau=HyperSet_Agg_tau, # default: 1e-9
+                                                   results=results, 
+                                                   failures=failures) 
 
         # Aggregate clients' training results (loss, acc., top-k-acc.)
         examples = [r.num_examples for _, r in results]
