@@ -49,18 +49,18 @@ SEED = 2021
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
 model_input_shape = (32,32,3)
-model_class_number = 10 # This is LABEL 
+model_class_number = 100 # This is LABEL 
 
 SAVE = True
 '''(bool) save log or not'''
 HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_Aggregation = MyFedAdagrad
+HyperSet_Aggregation = FedAvg #MyFedAdagrad
 HyperSet_Agg_eta = 1e-3 #1e-3
 HyperSet_Agg_tau = 1e-2
 HyperSet_client_number = 10
-HyperSet_round = 1000
+HyperSet_round = 10
 
 # --------
 # [Global varables]
@@ -130,8 +130,8 @@ class MyAggregation(HyperSet_Aggregation):
         '''Override'''
         # Call Parent-class's aggregate_fit()
         aggregated_weights = super().aggregate_fit(rnd=rnd,
-                                                   K_defining_eta=HyperSet_Agg_eta, # default: 1e-1
-                                                   K_defining_tau=HyperSet_Agg_tau, # default: 1e-9
+                                                   #K_defining_eta=HyperSet_Agg_eta, # default: 1e-1
+                                                   #K_defining_tau=HyperSet_Agg_tau, # default: 1e-9
                                                    results=results, 
                                                    failures=failures) 
 
@@ -204,18 +204,19 @@ def get_eval_fn(model):
     * 用 Global Dataset 評估 Global model (不含訓練)
     '''
     # Load data and model here to avoid the overhead of doing it in `evaluate` itself
-    _ ,(x_test,y_test) = tf.keras.datasets.cifar10.load_data()
+    #_ ,(x_test,y_test) = tf.keras.datasets.cifar10.load_data()
+    tfds_test_server = tf.data.experimental.load(f'dataset/cifar100_test_server/content/zip/cifar100_client/test_server/federated_test_data_all')
 
     # Data preprocessing
-    x_test = x_test / 255.0
-    y_test = tf.squeeze(y_test,axis=1) # cifar10 version
+    #x_test = x_test / 255.0
+    #y_test = tf.squeeze(y_test,axis=1) # cifar10 version
 
     # The `evaluate` function will be called after every round
     def evaluate(
         weights: fl.common.Weights,
     ) -> Optional[Tuple[float, Dict[str, fl.common.Scalar]]]:
         model.set_weights(weights)  # Update model with the latest parameters
-        loss, accuracy,top_k_categorical_accuracy = model.evaluate(x_test, y_test)
+        loss, accuracy,top_k_categorical_accuracy = model.evaluate(tfds_test_server) #model.evaluate(x_test, y_test)
         
         # [Kuihao addition] 暫存Server-side評估結果
         global Testing_result_centralized

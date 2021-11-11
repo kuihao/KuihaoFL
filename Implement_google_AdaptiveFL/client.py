@@ -36,12 +36,12 @@ np.random.seed(SEED)
 tf.random.set_seed(SEED)
 '''fix random seed'''
 model_input_shape = (32,32,3)
-model_class_number = 10 # This is LABEL 
+model_class_number = 100 # This is LABEL 
 HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_SampleRound = 1000
-HyperSet_SampleRange = 1000
+HyperSet_SampleRound = 10
+HyperSet_SampleRange = 500
 
 # --------
 # [Main]
@@ -113,6 +113,7 @@ class MyClient(fl.client.NumPyClient):
         self.x_test, self.y_test = x_test, y_test
         self.MachineID = MachineID
         self.SampleID = SampleID
+        self.num_examples_train = 0
 
     def get_parameters(self):
         """Get parameters of the local model."""
@@ -131,13 +132,17 @@ class MyClient(fl.client.NumPyClient):
         print("\n*** 本次為 round: ",config["rnd"]," ***\n") # Use round to pair sampling IDs
 
         # 依據 rnd 對應 sample id 挑選對應 client 的 dataset
-        (self.x_train,self.y_train) = load_EC10(self.SampleID[rnd])
+        #(self.x_train,self.y_train) = load_EC10(self.SampleID[rnd])
+        tfds_train = tf.data.experimental.load(f'dataset/cifar100_client_train/content/zip/cifar100_client/train/client_{self.SampleID[rnd]}_train')
+        # size of dataset
+        self.num_examples_train = sum(1 for _ in tfds_train)
 
         # Train the model using hyperparameters from config
         # (依 Server-side 的 hyperparameters 進行訓練)
         history = self.model.fit(
-            x = self.x_train,
-            y = self.y_train,
+            #x = self.x_train,
+            #y = self.y_train,
+            tfds_train,
             epochs = epochs,
             batch_size = batch_size,
         ) #validation_split=0.1, #batch_size, 
@@ -146,7 +151,6 @@ class MyClient(fl.client.NumPyClient):
         # Return updated model parameters and results
         # 將訓練後的權重、資料集筆數、正確率/loss值等，回傳至server-side
         parameters_prime = self.model.get_weights()
-        num_examples_train = len(self.x_train)
         results = {
             "loss": history.history["loss"][-1],
             "accuracy": history.history["accuracy"][-1],
@@ -155,7 +159,7 @@ class MyClient(fl.client.NumPyClient):
             "top_k_categorical_accuracy": history.history["top_k_categorical_accuracy"][-1],
         }
         #tf.keras.backend.clear_session()
-        return parameters_prime, num_examples_train, results
+        return parameters_prime, self.num_examples_train, results
 
     def evaluate(self, parameters, config):
         """Kuihao: 評估並非立即使用 local traing weight，而是使用新的 Global model weights"""
