@@ -1,20 +1,17 @@
 import tensorflow as tf
 class GoogleAdaptive_tfds_preprocess():
-    def __init__(self):
+    def __init__(self, global_seed=2021, crop_size=24, batch_zize=24,
+                 shuffle_buffer=100, prefetch_buffer=20):
         self.dataset=None
         self.rng=None
-        self.train=None
-        self.global_seed=None
-        self.crop_size=None # 欲裁切的大小
-        self.batch_zize=None
-        self.shuffle_buffer=None
-        self.prefetch_buffer=None
+        self.train=True
+        self.global_seed=global_seed
+        self.crop_size=crop_size # 欲裁切的大小
+        self.batch_zize=batch_zize
+        self.shuffle_buffer=shuffle_buffer
+        self.prefetch_buffer=prefetch_buffer
 
-    def preprocess(self, dataset, rng, train=True,
-                   global_seed=2021, crop_size=24, 
-                   batch_zize=20,
-                   shuffle_buffer=100, prefetch_buffer=20,
-                  ):
+    def preprocess(self, dataset, rng, train):
         """
         輸入
         一個client的資料集，內部進行shuffle、batching、preprocessing
@@ -24,11 +21,6 @@ class GoogleAdaptive_tfds_preprocess():
         self.dataset=dataset
         self.rng=rng
         self.train=train
-        self.global_seed=global_seed
-        self.crop_size=crop_size # 欲裁切的大小
-        self.batch_zize=batch_zize
-        self.shuffle_buffer=shuffle_buffer
-        self.prefetch_buffer=prefetch_buffer
         
         def simlpe_rescale(image, label):
             '''基本圖像正規化 (batch_format_fn)'''
@@ -64,6 +56,6 @@ class GoogleAdaptive_tfds_preprocess():
                 image = tf.image.resize_with_crop_or_pad(image, self.crop_size, self.crop_size)
             return (image, label) 
 
-        return dataset.shuffle(shuffle_buffer, seed=global_seed).map(
+        return dataset.shuffle(self.shuffle_buffer, seed=self.global_seed).map(
             custom_augment, num_parallel_calls=tf.data.AUTOTUNE).batch(
-            batch_zize).prefetch(prefetch_buffer)
+            self.batch_zize).prefetch(self.prefetch_buffer)
