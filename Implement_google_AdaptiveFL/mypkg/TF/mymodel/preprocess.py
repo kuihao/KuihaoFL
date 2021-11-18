@@ -32,7 +32,7 @@ class GoogleAdaptive_tfds_preprocess():
         self.shuffle_buffer=shuffle_buffer
         self.prefetch_buffer=prefetch_buffer
         
-        def simlpe_rescale(self, image, label):
+        def simlpe_rescale(image, label):
             '''基本圖像正規化 (batch_format_fn)'''
             # for IMAGE
             image = tf.cast(image, tf.float32)
@@ -45,9 +45,8 @@ class GoogleAdaptive_tfds_preprocess():
             tf.reshape(label, [-1, 1])
             return image, label
 
-        def custom_augment(self, element):
+        def custom_augment(element):
             '''自訂資料增強 (batch_format_fn)'''
-            global crop_size
             (image, label) = (element['image'], element['label'])
 
             # 套用基本圖像正規化
@@ -55,19 +54,16 @@ class GoogleAdaptive_tfds_preprocess():
             
             # 像素正規化
             # 只有 Training 才套用
-            if(train):
-                # 欲裁切的大小
-                crop_size = 24
-                
+            if(train):               
                 # 隨機裁切成 crop_size
                 seed = rng.make_seeds(2)[0]
-                image = tf.image.stateless_random_crop(image, size=[crop_size, crop_size, 3], seed=seed)
+                image = tf.image.stateless_random_crop(image, size=[self.crop_size, self.crop_size, 3], seed=seed)
                 image = tf.image.stateless_random_flip_left_right(image, seed=seed)
 
             # Testing時套用
             else:
                 # Centrally Cropping (此函式的裁切自動裁中心)
-                image = tf.image.resize_with_crop_or_pad(image, crop_size, crop_size)
+                image = tf.image.resize_with_crop_or_pad(image, self.crop_size, self.crop_size)
             return (image, label) 
 
         return dataset.repeat(num_client).shuffle(shuffle_buffer, seed=global_seed).map(
