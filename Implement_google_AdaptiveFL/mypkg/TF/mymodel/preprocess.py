@@ -6,14 +6,13 @@ class GoogleAdaptive_tfds_preprocess():
         self.train=None
         self.global_seed=None
         self.crop_size=None # 欲裁切的大小
-        self.num_client=None
         self.batch_zize=None
         self.shuffle_buffer=None
         self.prefetch_buffer=None
 
     def preprocess(self, dataset, rng, train=True,
                    global_seed=2021, crop_size=24, 
-                   num_client=500, batch_zize=20,
+                   batch_zize=20,
                    shuffle_buffer=100, prefetch_buffer=20,
                   ):
         """
@@ -27,7 +26,6 @@ class GoogleAdaptive_tfds_preprocess():
         self.train=train
         self.global_seed=global_seed
         self.crop_size=crop_size # 欲裁切的大小
-        self.num_client=num_client
         self.batch_zize=batch_zize
         self.shuffle_buffer=shuffle_buffer
         self.prefetch_buffer=prefetch_buffer
@@ -55,7 +53,7 @@ class GoogleAdaptive_tfds_preprocess():
             # 像素正規化
             # 只有 Training 才套用
             if(train):               
-                # 隨機裁切成 crop_size
+                # 隨機裁切成 crop_size 隨機水平翻轉
                 seed = rng.make_seeds(2)[0]
                 image = tf.image.stateless_random_crop(image, size=[self.crop_size, self.crop_size, 3], seed=seed)
                 image = tf.image.stateless_random_flip_left_right(image, seed=seed)
@@ -66,6 +64,6 @@ class GoogleAdaptive_tfds_preprocess():
                 image = tf.image.resize_with_crop_or_pad(image, self.crop_size, self.crop_size)
             return (image, label) 
 
-        return dataset.repeat(num_client).shuffle(shuffle_buffer, seed=global_seed).map(
+        return dataset.shuffle(shuffle_buffer, seed=global_seed).map(
             custom_augment, num_parallel_calls=tf.data.AUTOTUNE).batch(
             batch_zize).prefetch(prefetch_buffer)
