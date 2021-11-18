@@ -1,3 +1,6 @@
+client test functoni 更改 // preprocess 套用  
+實驗參數
+---
 1. 
 
 2. Server 的 loss acc 聚合計算，嘗試用 tensor 給 GPU 計算
