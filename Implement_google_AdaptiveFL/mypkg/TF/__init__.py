@@ -8,5 +8,5 @@ __all__ = [
     "CNN_Model",
     "myResNet",
     "myLoadDS",
-    "GoogleAdaptive_tfds_preprocess"
+    "GoogleAdaptive_tfds_preprocess",
 ]
