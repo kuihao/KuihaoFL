@@ -48,10 +48,10 @@ SEED = 2021
 '''fix random seed'''
 np.random.seed(SEED)
 tf.random.set_seed(SEED)
-model_input_shape = (32,32,3)
+model_input_shape = (24,24,3)
 model_class_number = 100 # This is LABEL 
 
-SAVE = True
+SAVE = False
 '''(bool) save log or not'''
 HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
@@ -60,7 +60,9 @@ HyperSet_Aggregation = FedAvg #MyFedAdagrad
 HyperSet_Agg_eta = 1e-3 #1e-3
 HyperSet_Agg_tau = 1e-2
 HyperSet_client_number = 10
-HyperSet_round = 10
+HyperSet_round = 3
+HyperSet_batch_size = 20
+HyperSet_local_epoch = 1
 
 # --------
 # [Global varables]
@@ -68,7 +70,7 @@ HyperSet_round = 10
 Training_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
 '''Clients Training 的聚合結果'''
 Testing_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
-'''[未使用] Clients Testing 的聚合結果'''
+'''Clients Testing 的聚合結果'''
 Training_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
 '''[未使用] Server Training 的結果'''
 Testing_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
@@ -90,14 +92,14 @@ def main() -> None:
     # Step 2. Make the strategy (制定聯合學習策略)
     strategy = MyAggregation(
         fraction_fit=1.0, # 每一輪參與Training的Client比例
-        #fraction_eval=1.0, # 每一輪參與Evaluating的Client比例
+        fraction_eval=1.0, # 每一輪參與Evaluating的Client比例
         min_fit_clients=HyperSet_client_number, # 每一輪參與Training的最少Client連線數量 (與比例衝突時,以此為準)
-        #min_eval_clients=3, # 每一輪參與Evaluating的最少Client連線數量 (與比例衝突時,以此為準)
+        min_eval_clients=HyperSet_client_number, # 每一輪參與Evaluating的最少Client連線數量 (與比例衝突時,以此為準)
         min_available_clients=HyperSet_client_number, # 啟動聯合學習之前，Client連線的最小數量
         
         on_fit_config_fn=fit_config, # 設定 Client-side Training Hyperparameter  
-        on_evaluate_config_fn=None, #evaluate_config, # 設定 Client-side Evaluating Hyperparameter
-        eval_fn=get_eval_fn(model), # 設定 Server-side Evaluating Hyperparameter (用Global Dataset進行評估)
+        on_evaluate_config_fn=evaluate_config, #evaluate_config, # 設定 Client-side Evaluating Hyperparameter
+        #eval_fn=get_eval_fn(model), # 設定 Server-side Evaluating Hyperparameter (用Global Dataset進行評估)
         initial_parameters=fl.common.weights_to_parameters(model.get_weights()), # Global Model 初始參數設定
     )
 
@@ -106,11 +108,15 @@ def main() -> None:
     fl.server.start_server("[::]:8080", config={"num_rounds": HyperSet_round}, strategy=strategy) #linux
 
     # [Kuihao addition] Save FL results to numpy-zip
-    global Training_result_distributed, Testing_result_centralized
+    global Training_result_distributed, Testing_result_centralized, Testing_result_centralized
     if SAVE:
         FL_Results_folder = secure_mkdir("FL_Results"+"/"+model_name)
-        np.savez(f"{FL_Results_folder}/Training_result_distributed.npz", Training_result_distributed)
-        np.savez(f"{FL_Results_folder}/Testing_result_centralized.npz", Testing_result_centralized)
+        if Training_result_distributed is not None:
+            np.savez(f"{FL_Results_folder}/Training_result_distributed.npz", Training_result_distributed)
+        if Testing_result_distributed is not None:
+            np.savez(f"{FL_Results_folder}/Testing_result_distributed.npz", Testing_result_distributed)
+        if Testing_result_centralized is not None:
+            np.savez(f"{FL_Results_folder}/Testing_result_centralized.npz", Testing_result_centralized)
 
 # --------
 # [Customized Aggregation Strategy]
@@ -162,6 +168,35 @@ class MyAggregation(HyperSet_Aggregation):
                 np.savez(f"{checkpoint_folder}/round-{rnd}-weights.npz", *aggregated_weights)
 
         return aggregated_weights
+    
+    def aggregate_evaluate(
+        self,
+        rnd: int,
+        results: List[Tuple[fl.server.client_proxy.ClientProxy, fl.common.EvaluateRes]], # [!!!] I fix this 
+        failures: List[BaseException],
+    ) -> Optional[float]:
+        """Aggregate evaluation losses using weighted average."""
+        if not results:
+            return None
+        
+        accuracies = [r.metrics["accuracy"] * r.num_examples for _, r in results]
+        examples = [r.num_examples for _, r in results]
+        accuracy_aggregated = sum(accuracies) / sum(examples)
+        losses = [r.metrics["loss"] * r.num_examples for _, r in results]
+        loss_aggregated = sum(losses) / sum(examples)
+        topK_accuracies = [r.metrics["top_k_categorical_accuracy"] * r.num_examples for _, r in results]
+        topK_accuracies_aggregated = sum(topK_accuracies) / sum(examples)
+        
+        # [Kuihao addition] 暫存Client-side訓練結果
+        global Testing_result_distributed
+        Testing_result_distributed["loss"].append(loss_aggregated)
+        Testing_result_distributed["accuracy"].append(accuracy_aggregated)
+        Testing_result_distributed["top_k_categorical_accuracy"].append(topK_accuracies_aggregated)
+        print(f"\n****\nRound {rnd}, test results from clients after aggregation:\n"\
+        f"Loss:{loss_aggregated} Acc.:{accuracy_aggregated} TopK Acc.:{topK_accuracies_aggregated}"\
+        f"\n****")
+
+        return super().aggregate_evaluate(rnd, results, failures)
 
 # --------
 # [Server-side function] config and evaluate
@@ -177,8 +212,8 @@ def fit_config(rnd: int):
       local epoch, increase to two local epochs afterwards.
     """
     config = {
-        "batch_size": 16,
-        "local_epochs": 1,
+        "batch_size": HyperSet_batch_size,
+        "local_epochs": HyperSet_local_epoch,
         "rnd":rnd,
     }
     return config
