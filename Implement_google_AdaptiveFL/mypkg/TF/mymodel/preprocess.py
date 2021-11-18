@@ -3,18 +3,18 @@ class GoogleAdaptive_tfds_preprocess():
     def __init__(self):
         self.dataset=None
         self.rng=None
-        self.train=True
-        self.global_seed=2021
-        self.crop_size=24 # 欲裁切的大小
-        self.num_client=500
-        self.batch_zize=20
-        self.shuffle_buffer=100
-        self.prefetch_buffer=20
+        self.train=None
+        self.global_seed=None
+        self.crop_size=None # 欲裁切的大小
+        self.num_client=None
+        self.batch_zize=None
+        self.shuffle_buffer=None
+        self.prefetch_buffer=None
 
-    def preprocess(self, dataset, rng, train,
-                   global_seed, crop_size, 
-                   num_client, batch_zize,
-                   shuffle_buffer, prefetch_buffer,
+    def preprocess(self, dataset, rng, train=True,
+                   global_seed=2021, crop_size=24, 
+                   num_client=500, batch_zize=20,
+                   shuffle_buffer=100, prefetch_buffer=20,
                   ):
         """
         輸入
