@@ -40,9 +40,7 @@ class GoogleAdaptive_tfds_preprocessor():
                 image = ((image-image_min) / (image_max-image_min))
 
             if BruteForce_kill_nan:
-                import numpy as np
-                image = np.nan_to_num(image, 1e-10)
-                image = tf.convert_to_tensor(image)
+                image = tf.where(tf.math.is_nan(image), tf.ones_like(image) * 1e-10, image)
 
             # for LABEL
             tf.reshape(label, [-1, 1])
