@@ -34,7 +34,7 @@ def myplot(forderpath, filename,):
     axs[1].plot(x_ticks, results_dict['accuracy'], 'tab:orange')
     axs[1].plot(x_ticks, results_dict['top_k_categorical_accuracy'], 'tab:green')
     axs[1].legend(['accuracy', 'top_k_categorical_accuracy'], loc='upper left')
-    axs[1].set_title('Acc. & Top-1 Acc.')
+    axs[1].set_title('Acc. & Top-5 Acc.')
 
     for ax in axs.flat:
         ax.set(ylabel='value') # y軸標籤
@@ -43,7 +43,7 @@ def myplot(forderpath, filename,):
         ax.xaxis.set_major_locator(MaxNLocator(integer=True)) #刻度用整數
     axs[1].set(xlabel='rounds') # x軸標籤
 
-    fig.suptitle('This is a somewhat long figure title', fontsize=16)
+    fig.suptitle('FL Result', fontsize=16)
 
     plt.show()
 
