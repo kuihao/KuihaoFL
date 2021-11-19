@@ -11,7 +11,7 @@ class GoogleAdaptive_tfds_preprocessor():
         self.shuffle_buffer=shuffle_buffer
         self.prefetch_buffer=prefetch_buffer
 
-    def preprocess(self, dataset, rng, train):
+    def preprocess(self, dataset, rng, train, add_minmax=False):
         """
         輸入
         一個client的資料集，內部進行shuffle、batching、preprocessing
@@ -22,7 +22,7 @@ class GoogleAdaptive_tfds_preprocessor():
         self.rng=rng
         self.train=train
         
-        def simlpe_rescale(image, label, add_minmax=False):
+        def simlpe_rescale(image, label):
             '''基本圖像正規化 (batch_format_fn)'''
             # for IMAGE
             image = tf.cast(image, tf.float32)
