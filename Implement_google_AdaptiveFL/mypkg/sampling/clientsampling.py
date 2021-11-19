@@ -15,6 +15,19 @@ def DynamicClientSample(rounds = 40, client_range=100,
     client_sample_list = client_sample_list.astype(int).tolist()
     return client_sample_list[client_id]
     
+def Simulation_DynamicClientSample(
+            training_client_number=10,
+            connect_client_number=500,
+            rounds=40,
+            seed=2021):
+    client_id_samples_np = np.zeros([training_client_number,rounds],int)
+
+    random.seed(seed)
+    for rnd in range(rounds):
+        for client_i in range(training_client_number):
+            client_id_samples_np[client_i,rnd] = int(random.randrange(0,connect_client_number,1))
+
+    return client_id_samples_np
 
 def FixClientSample(client_number=10):
     '''sample rate = 10%, returns: [list of sample IDs]'''

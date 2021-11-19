@@ -1,5 +1,5 @@
 import tensorflow as tf
-class GoogleAdaptive_tfds_preprocess():
+class GoogleAdaptive_tfds_preprocessor():
     def __init__(self, global_seed=2021, crop_size=24, batch_zize=24,
                  shuffle_buffer=100, prefetch_buffer=20):
         self.dataset=None
@@ -22,7 +22,7 @@ class GoogleAdaptive_tfds_preprocess():
         self.rng=rng
         self.train=train
         
-        def simlpe_rescale(image, label):
+        def simlpe_rescale(image, label, add_minmax=False):
             '''基本圖像正規化 (batch_format_fn)'''
             # for IMAGE
             image = tf.cast(image, tf.float32)
@@ -30,6 +30,11 @@ class GoogleAdaptive_tfds_preprocess():
             image_mean = tf.math.reduce_mean(image)
             image_std = tf.math.reduce_std(image,1)
             image = ((image-image_mean) / image_std)
+
+            if add_minmax:
+                image_max = tf.math.reduce_max(image)
+                image_min = tf.math.reduce_min(image)
+                image = ((image-image_min) / (image_max-image_min))
 
             # for LABEL
             tf.reshape(label, [-1, 1])
@@ -59,3 +64,11 @@ class GoogleAdaptive_tfds_preprocess():
         return dataset.shuffle(self.shuffle_buffer, seed=self.global_seed).map(
             custom_augment, num_parallel_calls=tf.data.AUTOTUNE).batch(
             self.batch_zize).prefetch(self.prefetch_buffer)
+
+def simple_cifar100_preprocessor(element):
+  (image, label) = (element['image'], element['label'])
+  image = tf.cast(image, tf.float32)
+  image = image / 255.0
+  if len(label.shape)>1:
+      label = tf.squeeze(label,axis=1)
+  return (image, label)
