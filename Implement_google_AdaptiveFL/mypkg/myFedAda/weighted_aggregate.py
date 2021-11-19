@@ -14,7 +14,7 @@ def Weighted_Aggregate(results: List[Tuple[Weights, int]], learning_rate=1) -> W
 
   # Compute average weights of each layer
   weights_prime: Weights = [
-       (reduce(np.add, layer_updates) / num_examples_total)
+       learning_rate*(reduce(np.add, layer_updates) / num_examples_total)
       for layer_updates in zip(*weighted_weights)
   ]
-  return learning_rate*weights_prime
+  return weights_prime
