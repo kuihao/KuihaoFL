@@ -27,9 +27,9 @@ class GoogleAdaptive_tfds_preprocessor():
             # for IMAGE
             image = tf.cast(image, tf.float32)
             # 論文要求的 Z-score 正規化 (mean and standard deviation)
-            image_mean = tf.math.reduce_mean(image)
+            image_mean = tf.experimental.numpy.nanmean(image)
             image_std = tf.math.reduce_std(image,1)
-            image = ((image-image_mean) / image_std)
+            image = tf.math.divide_no_nan((image-image_mean),image_std)
 
             if add_minmax:
                 image_max = tf.math.reduce_max(image)
