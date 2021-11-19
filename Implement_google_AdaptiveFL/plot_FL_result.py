@@ -28,7 +28,7 @@ def myplot(forderpath, filename,):
     fig, axs = plt.subplots(2, 1, figsize=(6, 12))
     '''畫布、繪製子圖(axes)，當子圖的維度有1時，axes的矩陣只能用一維[1]，而非2維[0,1]'''
     
-    axs[0].plot(x=x_ticks, y=results_dict['loss'])
+    axs[0].plot(x_ticks, results_dict['loss'])
     axs[0].set_title('Loss') # 子圖標題
     axs[0].legend(['loss'], loc='upper left') # 圖示說明
     axs[1].plot(x_ticks, results_dict['accuracy'], 'tab:orange')
