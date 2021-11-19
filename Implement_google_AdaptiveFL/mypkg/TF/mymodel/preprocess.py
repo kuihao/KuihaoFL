@@ -11,7 +11,7 @@ class GoogleAdaptive_tfds_preprocessor():
         self.shuffle_buffer=shuffle_buffer
         self.prefetch_buffer=prefetch_buffer
 
-    def preprocess(self, dataset, rng, train, normal_mode=False, add_minmax=False):
+    def preprocess(self, dataset, rng, train, BruteForce_kill_nan=False, normal_mode=False, add_minmax=False):
         """
         輸入
         一個client的資料集，內部進行shuffle、batching、preprocessing
@@ -38,6 +38,11 @@ class GoogleAdaptive_tfds_preprocessor():
                 image_max = tf.math.reduce_max(image)
                 image_min = tf.math.reduce_min(image)
                 image = ((image-image_min) / (image_max-image_min))
+
+            if BruteForce_kill_nan:
+                import numpy as np
+                image = np.nan_to_num(image, 1e-10)
+                image = tf.convert_to_tensor(image)
 
             # for LABEL
             tf.reshape(label, [-1, 1])
