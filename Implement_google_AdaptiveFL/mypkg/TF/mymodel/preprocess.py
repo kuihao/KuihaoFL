@@ -11,7 +11,7 @@ class GoogleAdaptive_tfds_preprocessor():
         self.shuffle_buffer=shuffle_buffer
         self.prefetch_buffer=prefetch_buffer
 
-    def preprocess(self, dataset, rng, train, add_minmax=False):
+    def preprocess(self, dataset, rng, train, normal_mode=False, add_minmax=False):
         """
         輸入
         一個client的資料集，內部進行shuffle、batching、preprocessing
@@ -27,9 +27,12 @@ class GoogleAdaptive_tfds_preprocessor():
             # for IMAGE
             image = tf.cast(image, tf.float32)
             # 論文要求的 Z-score 正規化 (mean and standard deviation)
-            image_mean = tf.experimental.numpy.nanmean(image)
-            image_std = tf.math.reduce_std(image,1)
-            image = tf.math.divide_no_nan((image-image_mean),image_std)
+            if not(normal_mode):
+                image_mean = tf.experimental.numpy.nanmean(image)
+                image_std = tf.math.reduce_std(image,1)
+                image = tf.math.divide_no_nan((image-image_mean),image_std)
+            else:
+                image /= 255.0
 
             if add_minmax:
                 image_max = tf.math.reduce_max(image)
