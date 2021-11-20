@@ -22,21 +22,16 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 #sys.path.append('/Implement_FedAdativate')#/home/sheng/document/Kuihao
 
 import numpy as np
-import copy
-import math
 
-import flwr as fl
-from flwr.server.strategy import FedAvg, FedYogi, FedAdam, FedAdagrad
-from typing import Any, Callable, Dict, List, Optional, Tuple
 from mypkg import (
     ServerArg, 
     ModelNameGenerator,
     secure_mkdir,
-    MyFedAdagrad,
-    MyFedYogi,
-    MyFedAdam,
     Simulation_DynamicClientSample,
-    Weighted_Aggregate
+    Weighted_Aggregate,
+    FedAdagrad_Aggregate,
+    FedAdam_Aggregate,
+    FedYogi_Aggregate,
 )
 
 #import tensorflow as tf
@@ -100,7 +95,7 @@ SAVE = True
 #HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_Aggregation = FedAvg #MyFedAdagrad
+HyperSet_Aggregation = Weighted_Aggregate
 HyperSet_Agg_eta = 1 #pow(10,(1/2)) #1e-3
 HyperSet_Agg_tau = None #1e-2
 HyperSet_Agg_beta1 = 0.9 
@@ -213,7 +208,7 @@ for rnd in range(HyperSet_round):
 
   # Aggregation
   ReturnResults = [(weight,size) for weight,size in zip(Clients_ModelWeights_list,Clients_DataSize_np)]
-  GlobalModel_NewestWeight = Weighted_Aggregate(ReturnResults,HyperSet_Agg_eta) #fl.common.parameters_to_weights()
+  GlobalModel_NewestWeight = HyperSet_Aggregation(GlobalModel_NewestWeight,ReturnResults,HyperSet_Agg_eta) #fl.common.parameters_to_weights()
 
   # Aggregate clients' training results (loss, acc., top-k-acc.)
   all_dataset_size = Clients_DataSize_np.sum()

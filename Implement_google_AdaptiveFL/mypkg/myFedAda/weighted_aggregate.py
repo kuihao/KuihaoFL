@@ -2,7 +2,11 @@ from flwr.common import Weights
 from functools import reduce
 from typing import List, Tuple
 import numpy as np
-def Weighted_Aggregate(results: List[Tuple[Weights, int]], learning_rate=1) -> Weights:
+def Weighted_Aggregate(
+    current_weights: Weights,
+    results: List[Tuple[Weights, int]], 
+    learning_rate=1.0,
+    ) -> Weights:
   """Compute weighted average."""
   # Calculate the total number of examples used during training
   num_examples_total = sum([num_examples for _, num_examples in results])
