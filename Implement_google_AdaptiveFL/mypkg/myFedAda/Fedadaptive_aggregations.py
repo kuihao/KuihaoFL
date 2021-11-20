@@ -1,7 +1,7 @@
 from flwr.common import Weights
 from typing import List, Tuple, Optional
 import numpy as np
-from myFedAda.weighted_aggregate import Weighted_Aggregate
+from .weighted_aggregate import Weighted_Aggregate
 
 def FedAdagrad_Aggregate(
     current_weights: Weights,
