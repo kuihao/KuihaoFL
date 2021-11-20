@@ -82,7 +82,7 @@ from mypkg.TF import (
 
 """#[Hyperparemeter]"""
 
-#model_name = 'try'
+#model_name = 'FL_Simulattion'
 SEED = 2021
 '''fix random seed'''
 np.random.seed(SEED)
@@ -295,7 +295,7 @@ for rnd in range(HyperSet_round):
   # 定期備份
   if SAVE:
     FL_Results_folder = secure_mkdir("FL_Results"+"/"+model_name)
-    if round%1000==0:
+    if rnd%1000==0:
       if Training_result_distributed is not None:
           np.savez(f"{FL_Results_folder}/Training_result_distributed.npz", Training_result_distributed)
       if Testing_result_distributed is not None:
@@ -312,7 +312,7 @@ for rnd in range(HyperSet_round):
 
   if SAVE:
     checkpoint_folder = secure_mkdir("ckpoint"+"/"+model_name)
-    if round%1000==0:
+    if rnd%1000==0:
       print(f"****Saving round {rnd+1} aggregated_weights...****")
       np.savez(f"{checkpoint_folder}/round-{rnd+1}-weights.npz", *GlobalModel_NewestWeight)
     elif rnd+1 == HyperSet_round:

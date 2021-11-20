@@ -12,7 +12,7 @@ def Result_AvgLast100round(forderpath, filename,):
 
     rounds = len(results_dict['loss'])
     if rounds < 100:
-      prompt_str = f'Last 1 round '
+      prompt_str = f'Last round '
       print(prompt_str+'loss',np.mean(results_dict['loss'][-1]))
       print(prompt_str+'Acc',np.mean(results_dict['accuracy'][-1]))
       print(prompt_str+'TopK Acc',np.mean(results_dict['top_k_categorical_accuracy'][-1]))
