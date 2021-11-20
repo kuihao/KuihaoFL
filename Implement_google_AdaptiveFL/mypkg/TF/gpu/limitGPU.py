@@ -38,7 +38,7 @@ def setGPU(mode = 1, gpus = tf.config.list_physical_devices('GPU'), device_num=0
         except RuntimeError as e:
             # Virtual devices must be set before GPUs have been initialized
             print("Kuihao:", e)
-    elif mode == 3 and gpus:
+    elif mode == 3 and gpus: # 同時使用雙GPU的設定
         try:
             tf.config.set_logical_device_configuration(
                 gpus[0],
