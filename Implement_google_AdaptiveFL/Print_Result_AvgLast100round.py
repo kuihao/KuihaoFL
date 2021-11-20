@@ -1,3 +1,5 @@
+import numpy as np
+
 def Result_AvgLast100round(forderpath, filename,):
     results_np = np.load(f"{forderpath}/{filename}", allow_pickle=True)
     '''解壓縮、匯入'''
