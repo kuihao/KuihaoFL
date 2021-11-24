@@ -30,6 +30,8 @@ class GoogleAdaptive_tfds_preprocessor():
             if not(normal_mode):
                 image_mean = tf.experimental.numpy.nanmean(image)
                 image_std = tf.math.reduce_std(image,1)
+                if BruteForce_kill_nan:
+                    image_std = tf.where(tf.math.is_nan(image_std), tf.ones_like(image_std) * 1e-10, image_std)
                 image = tf.math.divide_no_nan((image-image_mean),image_std)
             else:
                 image /= 255.0
@@ -39,8 +41,10 @@ class GoogleAdaptive_tfds_preprocessor():
                 image_min = tf.math.reduce_min(image)
                 image = ((image-image_min) / (image_max-image_min))
 
-            if BruteForce_kill_nan:
+            '''if BruteForce_kill_nan:
+                #pass
                 image = tf.where(tf.math.is_nan(image), tf.ones_like(image) * 1e-10, image)
+            '''
 
             # for LABEL
             tf.reshape(label, [-1, 1])
