@@ -23,7 +23,7 @@ def Result_AvgLast100round(forderpath, filename,):
       print(prompt_str+'TopK Acc',np.mean(results_dict['top_k_categorical_accuracy'][-100:]))
 
 def main():
-    forderpath = r"C:\Users\kuiha\OneDrive - 國立成功大學 National Cheng Kung University\NCKU研究所\FL論文andCode\FlowerFL_code\Implement_Flower_resnet18_EC_SavingResult\FL_Results\11_01_2021__12_05_46_test_save_result"
-    Result_AvgLast100round(forderpath, "Training_result_distributed.npz")
+    forderpath = r"D:\KuihaoFL\Implement_google_AdaptiveFL\tmp\11_21_2021__11_05_11_cifar100_noniid_resnet18_fedavgm_10client_4000round_mountum09_leta1em3d2_seta1e0"
+    Result_AvgLast100round(forderpath, "Testing_result_distributed.npz")
 
 main()

@@ -22,7 +22,7 @@ def myplot(forderpath, filename,):
     if filename == 'Training_result_distributed.npz':
         x_ticks = np.arange(1, len(results_dict['loss'])+1) # x軸數值
         print("hi")
-    elif filename == 'Testing_result_centralized.npz':
+    elif filename == 'Testing_result_centralized.npz' or filename =='Testing_result_distributed.npz':
         x_ticks = np.arange(0, len(results_dict['loss'])) # x軸數值
     
     fig, axs = plt.subplots(2, 1, figsize=(6, 12))
@@ -48,8 +48,8 @@ def myplot(forderpath, filename,):
     plt.show()
 
 def fix_input_main():
-    forderpath = r"C:\Users\kuiha\OneDrive - 國立成功大學 National Cheng Kung University\NCKU研究所\FL論文andCode\FlowerFL_code\Implement_Flower_resnet18_EC_SavingResult\FL_Results\11_01_2021__12_05_46_test_save_result"
-    myplot(forderpath, "Training_result_distributed.npz")
+    forderpath = r"D:\KuihaoFL\Implement_google_AdaptiveFL\tmp\11_21_2021__11_05_11_cifar100_noniid_resnet18_fedavgm_10client_4000round_mountum09_leta1em3d2_seta1e0"
+    myplot(forderpath, "Testing_result_distributed.npz")
     #myplot(forderpath, "Testing_result_centralized.npz")
 
 if __name__ == "__main__":
