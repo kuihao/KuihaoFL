@@ -28,6 +28,8 @@ from mypkg import (
     ServerArg, 
     ModelNameGenerator,
     secure_mkdir,
+    mylog,
+    Result_Avg_Last_N_round,
     Simulation_DynamicClientSample,
     Weighted_Aggregate,
     FedAdagrad_Aggregate,
@@ -96,7 +98,7 @@ SAVE = True
 #HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_Aggregation = FedYogi_Aggregate #Weighted_Aggregate
+HyperSet_Aggregation, Aggregation_name = FedYogi_Aggregate, 'FedYogi_Aggregate' #Weighted_Aggregate
 HyperSet_Agg_eta = pow(10,(0)) #1e-3
 HyperSet_Agg_tau = pow(10,(-1)) #1e-2
 HyperSet_Agg_beta1 = 0.9 
@@ -321,4 +323,44 @@ for rnd in range(HyperSet_round):
       np.savez(f"{checkpoint_folder}/round-{rnd+1}-weights.npz", *GlobalModel_NewestWeight)
 
   print('\n')
+
+if SAVE:
+  from datetime import datetime
+  now_time = datetime.now()
+  time_str = now_time.strftime("%m_%d_%Y__%H_%M_%S")
+  N = 100 # To calculate the avg N rounds result.
+  Train_Loss_avgN, Train_Acc_avgN, Train_TopKAcc_avgN = Result_Avg_Last_N_round(Training_result_distributed,N)
+  Test_Loss_avgN, Test_Acc_avgN, Test_TopKAcc_avgN = Result_Avg_Last_N_round(Testing_result_distributed,N)
+
+  log_folder = secure_mkdir("FL_log"+"/"+model_name)
+  log_text = f'*** FL Traing Record ***\n' \
+             f'Model Name: {model_name}\n' \
+             f'FL Finish Time: {time_str}\n' \
+             f'\n--- FL setting ---\n' \
+             f'Aggregation: {Aggregation_name}\n' \
+             f'Rounds: {HyperSet_round}\n' \
+             f'Traing population: {HyperSet_all_connect_client_number}\n' \
+             f'Testing population: {HyperSet_all_connect_test_client_number}\n' \
+             f'Number of client per round:{HyperSet_every_round_client_number}\n' \
+             f'\n--- Server-side hyperparemeter ---\n' \
+             f'Learning-rate: {HyperSet_Agg_eta}\n' \
+             f'Tau: {HyperSet_Agg_tau}\n' \
+             f'Beta-1: {HyperSet_Agg_beta1}\n' \
+             f'Beta-2: {HyperSet_Agg_beta2}\n' \
+             f'\n--- Client-side hyperparemeter ---\n' \
+             f'Learning-rate: {HyperSet_local_eta}\n' \
+             f'Momentum: {HyperSet_local_momentum}\n' \
+             f'Local epoch: {HyperSet_local_epoch}\n' \
+             f'Local batch size: {HyperSet_batch_size}\n' \
+             f'\n--- Other env. setting ---\n' \
+             f'Random Seed: {SEED}\n' \
+             f'\n--- Result ---\n' \
+             f'*Train Acc. (Avg last {N} rounds): {Train_Acc_avgN}\n' \
+             f'Train TopK-Acc. (Avg last {N} rounds): {Train_TopKAcc_avgN}\n' \
+             f'Train Loss (Avg last {N} rounds): {Train_Loss_avgN}\n' \
+             f'*Test Acc. (Avg last {N} rounds): {Test_Acc_avgN}\n' \
+             f'Test TopK-Acc. (Avg last {N} rounds): {Test_TopKAcc_avgN}\n' \
+             f'Test Loss (Avg last {N} rounds): {Test_Loss_avgN}\n'
+  mylog(log_text, log_folder+'/log')
+  print("log saved.")
 

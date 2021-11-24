@@ -5,6 +5,7 @@ from .myFedAda.weighted_aggregate import Weighted_Aggregate
 from .myFedAda.Fedadaptive_aggregations import FedAdagrad_Aggregate, FedAdam_Aggregate, FedYogi_Aggregate
 from .myio.PathSetting import secure_mkdir
 from .myio.prompt import ServerArg, ClientArg, ModelNameGenerator
+from .myio.logger import mylog, Result_Avg_Last_N_round
 from .sampling.clientsampling import FixClientSample, DynamicClientSample, Simulation_DynamicClientSample
 __all__ = [
     "MyFedYogi",
@@ -21,4 +22,6 @@ __all__ = [
     "FedAdagrad_Aggregate",
     "FedAdam_Aggregate",
     "FedYogi_Aggregate",
+    "mylog",
+    "Result_Avg_Last_N_round",
 ]
