@@ -1,3 +1,7 @@
+* 製作 log 檔顯示訓練日期、參數
+* 儲存訓練數據 Training_result_distributed is not none 無效，
+裡面已存有資料結構，需考慮其他方式辨別
+
 client test functoni 更改 // preprocess 套用  
 實驗參數
 ---
