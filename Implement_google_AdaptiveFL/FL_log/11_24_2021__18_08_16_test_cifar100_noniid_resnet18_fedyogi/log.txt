@@ -1,0 +1,34 @@
+*** FL Traing Record ***
+Model Name: 11_24_2021__18_08_16_test_cifar100_noniid_resnet18_fedyogi
+FL Finish Time: 11_24_2021__18_10_52
+
+--- FL setting ---
+Aggregation: FedYogi_Aggregate
+Rounds: 20
+Traing population: 500
+Testing population: 100
+Number of client per round:10
+
+--- Server-side hyperparemeter ---
+Learning-rate: 1
+Tau: 0.1
+Beta-1: 0.9
+Beta-2: 0.99
+
+--- Client-side hyperparemeter ---
+Learning-rate: 0.31622776601683794
+Momentum: 0.9
+Local epoch: 1
+Local batch size: 20
+
+--- Other env. setting ---
+Random Seed: 2021
+
+--- Result ---
+*Train Acc. (Avg last 100 rounds): 0.03700000084936619
+Train TopK-Acc. (Avg last 100 rounds): 0.0
+Train Loss (Avg last 100 rounds): 4.44950532913208
+*Test Acc. (Avg last 100 rounds): 0.015000000596046448
+Test TopK-Acc. (Avg last 100 rounds): 0.0
+Test Loss (Avg last 100 rounds): 42003.2326171875
+
