@@ -3,3 +3,4 @@ Implement_google_AdaptiveFL/ckpoint
 Implement_google_AdaptiveFL/FL_Results
 Implement_google_AdaptiveFL/test
 Implement_google_AdaptiveFL/tmp
+*.pyc
