@@ -9,7 +9,8 @@ Original file is located at
 #Prepare Dataset
 """
 
-dataset_path = 'dataset/cifar100_noniid/content/zip/cifar100_noniid'
+#dataset_path = 'dataset/cifar100_noniid/content/zip/cifar100_noniid'
+dataset_path = r'C:\Users\kuiha\OneDrive - 國立成功大學 National Cheng Kung University\NCKU研究所\FL論文andCode\FlowerFL_code\實驗資料集\content\zip\cifar100_noniid'
 
 """#IMPORT PKG"""
 
@@ -95,14 +96,14 @@ SAVE = True
 #HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
 #CNN_Model(model_input_shape,model_class_number)
 #myResNet().ResNet18(model_input_shape,model_class_number)
-HyperSet_Aggregation = Weighted_Aggregate
-HyperSet_Agg_eta = 1 #pow(10,(1/2)) #1e-3
-HyperSet_Agg_tau = None #1e-2
+HyperSet_Aggregation = FedYogi_Aggregate #Weighted_Aggregate
+HyperSet_Agg_eta = pow(10,(0)) #1e-3
+HyperSet_Agg_tau = pow(10,(-1)) #1e-2
 HyperSet_Agg_beta1 = 0.9 
 HyperSet_Agg_beta2 = 0.99
 
-HyperSet_local_eta = 1e-1 #1e-2 #1e-1
-HyperSet_local_momentum = 0
+HyperSet_local_eta = pow(10,(-1/2)) #1e-1
+HyperSet_local_momentum = 0.9
 HyperSet_local_epoch = 1
 
 HyperSet_all_connect_client_number = 500
@@ -208,7 +209,7 @@ for rnd in range(HyperSet_round):
 
   # Aggregation
   ReturnResults = [(weight,size) for weight,size in zip(Clients_ModelWeights_list,Clients_DataSize_np)]
-  GlobalModel_NewestWeight = HyperSet_Aggregation(GlobalModel_NewestWeight,ReturnResults,HyperSet_Agg_eta) #fl.common.parameters_to_weights()
+  GlobalModel_NewestWeight = HyperSet_Aggregation(GlobalModel_NewestWeight,ReturnResults,HyperSet_Agg_eta,HyperSet_Agg_tau) #fl.common.parameters_to_weights()
 
   # Aggregate clients' training results (loss, acc., top-k-acc.)
   all_dataset_size = Clients_DataSize_np.sum()
@@ -253,7 +254,7 @@ for rnd in range(HyperSet_round):
     #print(f"\nClient {client_i} test cid={cid}")
     
     # load data
-    tfds_test = myLoadDS(dataset_path+f'/client/test/client_{cid%100}_train', 'tfds')
+    tfds_test = myLoadDS(dataset_path+f'/client/test/client_{cid}_train', 'tfds')
     #tfds_test = tf.data.experimental.load(dataset_path+f'/client/test/client_{cid%100}_train')
     val_len = 100 #sum(1 for _ in tfds_test)
     
