@@ -8,6 +8,8 @@ def FedAdagrad_Aggregate(
     results: List[Tuple[Weights, int]], 
     eta=1.0,
     tau=1e-2,
+    beta_1=None,
+    beta_2=None,
     ) -> Weights:
     '''
     current_weights(model weights): The current newest global model weights .

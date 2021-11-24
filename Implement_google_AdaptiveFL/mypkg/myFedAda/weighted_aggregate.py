@@ -6,6 +6,9 @@ def Weighted_Aggregate(
     current_weights: Weights,
     results: List[Tuple[Weights, int]], 
     learning_rate=1.0,
+    tau=None,
+    beta_1=None,
+    beta_2=None,
     ) -> Weights:
   """Compute weighted average."""
   # Calculate the total number of examples used during training
