@@ -13,7 +13,7 @@ def Result_Avg_Last_N_round(results_dict, N:int):
     print(prompt_str+'loss',loss)
     acc = np.mean(results_dict['accuracy'][-1])
     print(prompt_str+'Acc',acc)
-    topkacc = np.mean(results_dict['top_k_categorical_accuracy'][-1])
+    topkacc = np.mean(results_dict['sparse_top_k_categorical_accuracy'][-1])
     print(prompt_str+'TopK Acc',topkacc)
   else:
     prompt_str = f'Last {N} avg '
@@ -21,7 +21,7 @@ def Result_Avg_Last_N_round(results_dict, N:int):
     print(prompt_str+'loss',loss)
     acc = np.mean(results_dict['accuracy'][-N:])
     print(prompt_str+'Acc',acc)
-    topkacc = np.mean(results_dict['top_k_categorical_accuracy'][-N:])
+    topkacc = np.mean(results_dict['sparse_top_k_categorical_accuracy'][-N:])
     print(prompt_str+'TopK Acc',topkacc)
   
   return loss,acc,topkacc
