@@ -2,13 +2,13 @@ import random
 import numpy as np
 
 def DynamicClientSample(rounds = 40, client_range=100, 
-                        training_client_number=10, 
+                        exeuting_client_number=10, 
                         sample_rate=0.1, client_id=0,
                         seed=2021):
     client_id_list = [i for i in range(client_range)]
     random.seed(seed)
-    client_sample_list = np.zeros((training_client_number,client_range))
-    for i in range(training_client_number):
+    client_sample_list = np.zeros((exeuting_client_number,client_range))
+    for i in range(exeuting_client_number):
         for j in range(rounds):
             client_sample_list[i,j] = random.sample(client_id_list, 1)[0]
     
@@ -16,15 +16,15 @@ def DynamicClientSample(rounds = 40, client_range=100,
     return client_sample_list[client_id]
     
 def Simulation_DynamicClientSample(
-            training_client_number=10,
+            exeuting_client_number=10,
             connect_client_number=500,
             rounds=40,
             seed=2021):
-    client_id_samples_np = np.zeros([training_client_number,rounds],int)
+    client_id_samples_np = np.zeros([exeuting_client_number,rounds],int)
 
     random.seed(seed)
     for rnd in range(rounds):
-        for client_i in range(training_client_number):
+        for client_i in range(exeuting_client_number):
             client_id_samples_np[client_i,rnd] = int(random.randrange(0,connect_client_number,1))
 
     return client_id_samples_np

@@ -95,24 +95,24 @@ model_class_number = 100 # This is LABEL
 
 SAVE = True
 '''(bool) save log or not'''
-#HyperSet_Model = myResNet().ResNet18(model_input_shape,model_class_number)
-#CNN_Model(model_input_shape,model_class_number)
-#myResNet().ResNet18(model_input_shape,model_class_number)
 HyperSet_Aggregation, Aggregation_name = FedYogi_Aggregate, 'FedYogi_Aggregate' #Weighted_Aggregate
-HyperSet_Agg_eta = pow(10,(0)) #1e-3
-HyperSet_Agg_tau = pow(10,(-1)) #1e-2
-HyperSet_Agg_beta1 = 0.9 
-HyperSet_Agg_beta2 = 0.99
-
-HyperSet_local_eta = pow(10,(-1/2)) #1e-1
-HyperSet_local_momentum = 0.9
-HyperSet_local_epoch = 1
-
-HyperSet_all_connect_client_number = 500
-HyperSet_all_connect_test_client_number = 100
-HyperSet_every_round_client_number = 10
 HyperSet_round = 4000
-HyperSet_batch_size = 20
+HyperSet_Train_all_connect_client_number = 500
+HypHyperSet_Train_EveryRound_client_number = 10
+HyperSet_Test_all_connect_client_number = 100
+HypHyperSet_Test_EveryRound_client_number = 10
+
+HyperSet_Server_eta = pow(10,(0)) #1e-3
+HyperSet_Server_tau = pow(10,(-1)) #1e-2
+HyperSet_Server_beta1 = 0.9 
+HyperSet_Server_beta2 = 0.99
+
+HyperSet_Local_eta = pow(10,(-1/2)) #1e-1
+HyperSet_Local_momentum = 0.9
+HyperSet_Local_batch_size = 20
+HyperSet_Local_epoch = 1
+''''''
+
 
 """#EXE FL
 1. Get Global model parameter
@@ -127,38 +127,41 @@ Build-Model
 '''
 tf.keras.backend.clear_session()
 model = myResNet().ResNet18(model_input_shape,model_class_number)
-optimizer = tf.keras.optimizers.SGD(learning_rate=HyperSet_local_eta, momentum=HyperSet_local_momentum)
+optimizer = tf.keras.optimizers.SGD(learning_rate=HyperSet_Local_eta, momentum=HyperSet_Local_momentum)
 #optimizer = tf.keras.optimizers.Adam() #learning_rate=1e-5
 model.compile( optimizer, 
         tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), 
-        metrics=["accuracy", 'top_k_categorical_accuracy'])
+        metrics=["accuracy", 'sparse_top_k_categorical_accuracy']) # sparse_top_k_categorical_accuracy, top_k_categorical_accuracy
 
 GlobalModel_NewestWeight = model.get_weights()
 
-rng = tf.random.Generator.from_seed(110, alg='philox') # Server?
+# Random number generator
+rng = tf.random.Generator.from_seed(110, alg='philox')
+# Sampling Train-client ordre
 SampleClientID_np = Simulation_DynamicClientSample( 
-                            training_client_number=HyperSet_every_round_client_number, 
-                            connect_client_number=HyperSet_all_connect_client_number,
+                            exeuting_client_number=HypHyperSet_Train_EveryRound_client_number, 
+                            connect_client_number=HyperSet_Train_all_connect_client_number,
                             rounds=HyperSet_round,
                             seed=SEED
                           )
+# Sampling Test-client ordre                      
 SampleClientID_test_np = Simulation_DynamicClientSample( 
-                              training_client_number=HyperSet_every_round_client_number, 
-                              connect_client_number=HyperSet_all_connect_test_client_number,
+                              exeuting_client_number=HypHyperSet_Train_EveryRound_client_number, 
+                              connect_client_number=HyperSet_Test_all_connect_client_number,
                               rounds=HyperSet_round,
                               seed=SEED+1
                             )
 
-Clients_ModelWeights_list = [[]]*HyperSet_every_round_client_number
-Clients_DataSize_np = np.zeros([HyperSet_every_round_client_number])
-Clients_Results_list = [{}]*HyperSet_every_round_client_number
-Clients_DataSize_test_np = np.zeros([HyperSet_every_round_client_number])
-Clients_Results_test_list = [{}]*HyperSet_every_round_client_number
+Clients_ModelWeights_list = [[]]*HypHyperSet_Train_EveryRound_client_number
+Clients_DataSize_np = np.zeros([HypHyperSet_Train_EveryRound_client_number])
+Clients_Results_list = [{}]*HypHyperSet_Train_EveryRound_client_number
+Clients_DataSize_test_np = np.zeros([HypHyperSet_Test_EveryRound_client_number])
+Clients_Results_test_list = [{}]*HypHyperSet_Test_EveryRound_client_number
 
 preprocessor = GoogleAdaptive_tfds_preprocessor(
                           global_seed=SEED, 
                           crop_size=24, 
-                          batch_zize=HyperSet_batch_size, 
+                          batch_zize=HyperSet_Local_batch_size, 
                           shuffle_buffer=100, 
                           prefetch_buffer=20,              
                         )
@@ -166,23 +169,26 @@ preprocessor = GoogleAdaptive_tfds_preprocessor(
 # --------
 # [Global varables]
 # --------
-Training_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+Training_result_distributed = {'loss':[],'accuracy':[],'sparse_top_k_categorical_accuracy':[]}
 '''Clients Training 的聚合結果'''
-Testing_result_distributed = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+Testing_result_distributed = {'loss':[],'accuracy':[],'sparse_top_k_categorical_accuracy':[]}
 '''Clients Testing 的聚合結果'''
-Training_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+Training_result_centralized = {'loss':[],'accuracy':[],'sparse_top_k_categorical_accuracy':[]}
 '''[未使用] Server Training 的結果'''
-Testing_result_centralized = {'loss':[],'accuracy':[],'top_k_categorical_accuracy':[]}
+Testing_result_centralized = {'loss':[],'accuracy':[],'sparse_top_k_categorical_accuracy':[]}
 '''Server Testing 的結果'''
 
-server_test_data = myLoadDS(dataset_path+'/server/test/global_test_all', 'tfds')
-#server_test_data = tf.data.experimental.load(dataset_path+'/server/test/global_test_all')
+# Load Server-side test daraset
+#server_test_data = myLoadDS(dataset_path+'/server/test/global_test_all', 'tfds')
 
+"""
+#FL Learning
+"""
 for rnd in range(HyperSet_round):
   print(f"**** Round {rnd+1} ****")
   
   # Client Train
-  for client_i in range(HyperSet_every_round_client_number):
+  for client_i in range(HypHyperSet_Train_EveryRound_client_number):
     # get client id
     cid = SampleClientID_np[client_i,rnd]
     #print(f"\nClient {client_i} execute cid={cid}")
@@ -196,14 +202,14 @@ for rnd in range(HyperSet_round):
     model.set_weights(GlobalModel_NewestWeight)
     history = model.fit(
                 preprocessor.preprocess(tfds_train, rng, train=True, BruteForce_kill_nan=True, add_minmax=False, normal_mode=False),
-                #tfds_train.map(simple_cifar100_preprocessor, num_parallel_calls=tf.data.AUTOTUNE).batch(HyperSet_batch_size).prefetch(20),
-                epochs=HyperSet_local_epoch,
+                #tfds_train.map(simple_cifar100_preprocessor, num_parallel_calls=tf.data.AUTOTUNE).batch(HyperSet_Local_batch_size).prefetch(20),
+                epochs=HyperSet_Local_epoch,
                 verbose=3,
               )
     results = {
         "loss": history.history["loss"][-1],
         "accuracy": history.history["accuracy"][-1],
-        "top_k_categorical_accuracy": history.history["top_k_categorical_accuracy"][-1],
+        "sparse_top_k_categorical_accuracy": history.history["sparse_top_k_categorical_accuracy"][-1],
     }
     Clients_ModelWeights_list[client_i] = model.get_weights()
     Clients_DataSize_np[client_i] = train_len
@@ -211,7 +217,7 @@ for rnd in range(HyperSet_round):
 
   # Aggregation
   ReturnResults = [(weight,size) for weight,size in zip(Clients_ModelWeights_list,Clients_DataSize_np)]
-  GlobalModel_NewestWeight = HyperSet_Aggregation(GlobalModel_NewestWeight,ReturnResults,HyperSet_Agg_eta,HyperSet_Agg_tau) #fl.common.parameters_to_weights()
+  GlobalModel_NewestWeight = HyperSet_Aggregation(GlobalModel_NewestWeight,ReturnResults,HyperSet_Server_eta,HyperSet_Server_tau) #fl.common.parameters_to_weights()
 
   # Aggregate clients' training results (loss, acc., top-k-acc.)
   all_dataset_size = Clients_DataSize_np.sum()
@@ -222,7 +228,7 @@ for rnd in range(HyperSet_round):
   accuracies_weighted = [r['accuracy'] * size for r,size in zip(Clients_Results_list,Clients_DataSize_np)]
   accuracy_aggregated = sum(accuracies_weighted) / all_dataset_size
 
-  topK_accuracies_weighted = [r['top_k_categorical_accuracy'] * size for r,size in zip(Clients_Results_list,Clients_DataSize_np)]
+  topK_accuracies_weighted = [r['sparse_top_k_categorical_accuracy'] * size for r,size in zip(Clients_Results_list,Clients_DataSize_np)]
   topK_accuracies_aggregated = sum(topK_accuracies_weighted) / all_dataset_size
   
   # 輸出儲存 Client-side 訓練結果
@@ -231,7 +237,7 @@ for rnd in range(HyperSet_round):
   f"\n****")
   Training_result_distributed["loss"].append(loss_aggregated)
   Training_result_distributed["accuracy"].append(accuracy_aggregated)
-  Training_result_distributed["top_k_categorical_accuracy"].append(topK_accuracies_aggregated)
+  Training_result_distributed["sparse_top_k_categorical_accuracy"].append(topK_accuracies_aggregated)
 
   '''
   # 輸出儲存 Server-side 測試結果
@@ -239,18 +245,18 @@ for rnd in range(HyperSet_round):
   model.set_weights(GlobalModel_NewestWeight)
   loss_aggregated, accuracy_aggregated, topK_accuracies_aggregated = model.evaluate( 
           preprocessor.preprocess(server_test_data, rng, train=False, add_minmax=True),
-          #server_test_data.map(simple_cifar100_preprocessor, num_parallel_calls=tf.data.AUTOTUNE).batch(HyperSet_batch_size).prefetch(20),
+          #server_test_data.map(simple_cifar100_preprocessor, num_parallel_calls=tf.data.AUTOTUNE).batch(HyperSet_Local_batch_size).prefetch(20),
           verbose=2,
          )
   print("***")
   Testing_result_centralized["loss"].append(loss_aggregated)
   Testing_result_centralized["accuracy"].append(accuracy_aggregated)
-  Testing_result_centralized["top_k_categorical_accuracy"].append(topK_accuracies_aggregated)
+  Testing_result_centralized["sparse_top_k_categorical_accuracy"].append(topK_accuracies_aggregated)
   '''
 
   
   # Client Test
-  for client_i in range(HyperSet_every_round_client_number):
+  for client_i in range(HypHyperSet_Test_EveryRound_client_number):
     # get client id
     cid = SampleClientID_test_np[client_i,rnd]
     #print(f"\nClient {client_i} test cid={cid}")
@@ -264,13 +270,13 @@ for rnd in range(HyperSet_round):
     model.set_weights(GlobalModel_NewestWeight)
     loss, acc, topk = model.evaluate( 
                       preprocessor.preprocess(tfds_test, rng, train=False, BruteForce_kill_nan=True, add_minmax=False, normal_mode=False),
-                      #tfds_test.map(simple_cifar100_preprocessor, num_parallel_calls=tf.data.AUTOTUNE).batch(HyperSet_batch_size).prefetch(20),
+                      #tfds_test.map(simple_cifar100_preprocessor, num_parallel_calls=tf.data.AUTOTUNE).batch(HyperSet_Local_batch_size).prefetch(20),
                       verbose=3,
                       )
     results = {
         "loss": loss,
         "accuracy": acc,
-        "top_k_categorical_accuracy": topk,
+        "sparse_top_k_categorical_accuracy": topk,
     }
     Clients_DataSize_test_np[client_i] = val_len
     Clients_Results_test_list[client_i] = results
@@ -284,7 +290,7 @@ for rnd in range(HyperSet_round):
   accuracies_weighted = [r['accuracy'] * size for r,size in zip(Clients_Results_test_list,Clients_DataSize_test_np)]
   accuracy_aggregated = sum(accuracies_weighted) / all_dataset_size
 
-  topK_accuracies_weighted = [r['top_k_categorical_accuracy'] * size for r,size in zip(Clients_Results_test_list,Clients_DataSize_test_np)]
+  topK_accuracies_weighted = [r['sparse_top_k_categorical_accuracy'] * size for r,size in zip(Clients_Results_test_list,Clients_DataSize_test_np)]
   topK_accuracies_aggregated = sum(topK_accuracies_weighted) / all_dataset_size
   
   # 輸出儲存 Client-side 測試結果
@@ -293,7 +299,7 @@ for rnd in range(HyperSet_round):
   f"\n****")
   Testing_result_distributed["loss"].append(loss_aggregated)
   Testing_result_distributed["accuracy"].append(accuracy_aggregated)
-  Testing_result_distributed["top_k_categorical_accuracy"].append(topK_accuracies_aggregated)
+  Testing_result_distributed["sparse_top_k_categorical_accuracy"].append(topK_accuracies_aggregated)
   
   # 定期備份
   if SAVE:
@@ -339,19 +345,19 @@ if SAVE:
              f'\n--- FL setting ---\n' \
              f'Aggregation: {Aggregation_name}\n' \
              f'Rounds: {HyperSet_round}\n' \
-             f'Traing population: {HyperSet_all_connect_client_number}\n' \
-             f'Testing population: {HyperSet_all_connect_test_client_number}\n' \
-             f'Number of client per round:{HyperSet_every_round_client_number}\n' \
+             f'Traing population: {HyperSet_Train_all_connect_client_number}\n' \
+             f'Testing population: {HyperSet_Test_all_connect_client_number}\n' \
+             f'Number of client per round:{HypHyperSet_Train_EveryRound_client_number}\n' \
              f'\n--- Server-side hyperparemeter ---\n' \
-             f'Learning-rate: {HyperSet_Agg_eta}\n' \
-             f'Tau: {HyperSet_Agg_tau}\n' \
-             f'Beta-1: {HyperSet_Agg_beta1}\n' \
-             f'Beta-2: {HyperSet_Agg_beta2}\n' \
+             f'Learning-rate: {HyperSet_Server_eta}\n' \
+             f'Tau: {HyperSet_Server_tau}\n' \
+             f'Beta-1: {HyperSet_Server_beta1}\n' \
+             f'Beta-2: {HyperSet_Server_beta2}\n' \
              f'\n--- Client-side hyperparemeter ---\n' \
-             f'Learning-rate: {HyperSet_local_eta}\n' \
-             f'Momentum: {HyperSet_local_momentum}\n' \
-             f'Local epoch: {HyperSet_local_epoch}\n' \
-             f'Local batch size: {HyperSet_batch_size}\n' \
+             f'Learning-rate: {HyperSet_Local_eta}\n' \
+             f'Momentum: {HyperSet_Local_momentum}\n' \
+             f'Local epoch: {HyperSet_Local_epoch}\n' \
+             f'Local batch size: {HyperSet_Local_batch_size}\n' \
              f'\n--- Other env. setting ---\n' \
              f'Random Seed: {SEED}\n' \
              f'\n--- Result ---\n' \
