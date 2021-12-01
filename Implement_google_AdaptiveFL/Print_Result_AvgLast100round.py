@@ -15,15 +15,18 @@ def Result_AvgLast100round(forderpath, filename,):
       prompt_str = f'Last round '
       print(prompt_str+'loss',np.mean(results_dict['loss'][-1]))
       print(prompt_str+'Acc',np.mean(results_dict['accuracy'][-1]))
-      print(prompt_str+'TopK Acc',np.mean(results_dict['top_k_categorical_accuracy'][-1]))
+      print(prompt_str+'TopK Acc',np.mean(results_dict['sparse_top_k_categorical_accuracy'][-1]))
     else:
       prompt_str = f'Last {100} avg '
       print(prompt_str+'loss',np.mean(results_dict['loss'][-100:]))
       print(prompt_str+'Acc',np.mean(results_dict['accuracy'][-100:]))
-      print(prompt_str+'TopK Acc',np.mean(results_dict['top_k_categorical_accuracy'][-100:]))
+      print(prompt_str+'TopK Acc',np.mean(results_dict['sparse_top_k_categorical_accuracy'][-100:]))
 
 def main():
-    forderpath = r"D:\KuihaoFL\Implement_google_AdaptiveFL\tmp\11_21_2021__11_05_11_cifar100_noniid_resnet18_fedavgm_10client_4000round_mountum09_leta1em3d2_seta1e0"
+    forderpath = r"D:\KuihaoFL\Implement_google_AdaptiveFL\FL_Results\11_26_2021__22_12_08_cifar100_noniid_resnet18_fedadagrad"
+    print("Train:")
+    Result_AvgLast100round(forderpath, "Training_result_distributed.npz")
+    print("Test:")
     Result_AvgLast100round(forderpath, "Testing_result_distributed.npz")
 
 main()
