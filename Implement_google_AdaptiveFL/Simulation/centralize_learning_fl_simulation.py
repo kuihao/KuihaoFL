@@ -95,19 +95,19 @@ model_class_number = 100 # This is LABEL
 
 SAVE = True
 '''(bool) save log or not'''
-HyperSet_Aggregation, Aggregation_name = FedAdagrad_Aggregate, 'FedAdagrad_Aggregate' #Weighted_Aggregate
-HyperSet_round = 4000
+HyperSet_Aggregation, Aggregation_name = FedYogi_Aggregate, 'FedYogi_Aggregate' #Weighted_Aggregate
+HyperSet_round = 2000
 HyperSet_Train_all_connect_client_number = 500
-HypHyperSet_Train_EveryRound_client_number = 10
+HypHyperSet_Train_EveryRound_client_number = 500
 HyperSet_Test_all_connect_client_number = 100
-HypHyperSet_Test_EveryRound_client_number = 10
+HypHyperSet_Test_EveryRound_client_number = 100
 
-HyperSet_Server_eta = pow(10,(-1)) #1e-3
-HyperSet_Server_tau = pow(10,(-3)) #1e-2
+HyperSet_Server_eta = pow(10,(-0)) #1e-3
+HyperSet_Server_tau = pow(10,(-1)) #1e-2
 HyperSet_Server_beta1 = 0.9 
 HyperSet_Server_beta2 = 0.99
 
-HyperSet_Local_eta = pow(10,(-2)) #1e-1
+HyperSet_Local_eta = pow(10,(-1/2)) #1e-1
 HyperSet_Local_momentum = 0.9
 HyperSet_Local_batch_size = 20
 HyperSet_Local_epoch = 1
@@ -340,7 +340,7 @@ if SAVE:
 
   log_folder = secure_mkdir("FL_log"+"/"+model_name)
   log_text = f'*** FL Traing Record ***\n' \
-             f'Model Name: {model_name}\n' \
+             f'Model Name: Cntralize {model_name}\n' \
              f'FL Finish Time: {time_str}\n' \
              f'\n--- FL setting ---\n' \
              f'Aggregation: {Aggregation_name}\n' \
@@ -369,4 +369,3 @@ if SAVE:
              f'Test Loss (Avg last {N} rounds): {Test_Loss_avgN}\n'
   mylog(log_text, log_folder+'/log')
   print("log saved.")
-
