@@ -15,6 +15,8 @@ dataset_path = 'dataset/cifar100_noniid/content/zip/cifar100_noniid'
 """#IMPORT PKG"""
 
 import os
+
+from tensorflow.python.saved_model.loader_impl import parse_saved_model
 # Make TensorFlow logs less verbose
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
@@ -74,6 +76,18 @@ else:
         from mypkg.TF import setGPU
         setGPU(mode=1) # Dataset size 會影響 GPU memory 需求
 
+# --------
+# [Model Recovery Setting]
+# --------
+checkpoint_load = None
+prior_model = None
+if args.mode == 1:
+    '''The prior temporary checkpoint was interrupt accidentally.'''
+    prior_model = args.prior_model_name  
+elif args.mode == 2:
+    '''Load the other model train finished.'''
+    checkpoint_load = args.checkpoint_path
+
 import tensorflow as tf
 import tensorflow_addons as tfa
 from mypkg.TF import (
@@ -96,35 +110,40 @@ model_class_number = 100 # This is LABEL
 
 SAVE = True
 '''(bool) save log or not'''
-HyperSet_Aggregation, Aggregation_name = FedYogi_Aggregate, 'FedYogi_Aggregate' #Weighted_Aggregate
-HyperSet_round = 200 # 4000*10 / 500 = 80
+HyperSet_Aggregation, Aggregation_name = '', '' #Weighted_Aggregate
+HyperSet_round = 600 # 4000*10 / 500 = 80
 HyperSet_Train_all_connect_client_number = 500
 HypHyperSet_Train_EveryRound_client_number = 500
 HyperSet_Test_all_connect_client_number = 100
 HypHyperSet_Test_EveryRound_client_number = 100
 
 HyperSet_Server_eta = pow(10,(0)) #1e-3
-HyperSet_Server_tau = pow(10,(-1)) #1e-2
-HyperSet_Server_beta1 = 0.9 
-HyperSet_Server_beta2 = 0.99
+HyperSet_Server_tau = None #pow(10,(-1)) #1e-2
+HyperSet_Server_beta1 = None #0.9 
+HyperSet_Server_beta2 = None #0.99
 
-HyperSet_Local_eta = pow(10,(-1/2)) #1e-1
-HyperSet_Local_momentum = 0.9
+HyperSet_Local_eta = None #pow(10,(-1/2)) #1e-1
+'''Don't use this'''
+HyperSet_Local_momentum = 0. #0.9
 HyperSet_Local_batch_size = 20
-HyperSet_Local_epoch = 1
+HyperSet_Local_epoch = None
+
+HyperSet_optimizer = tf.keras.optimizers.SGD(learning_rate=HyperSet_Server_eta, momentum=HyperSet_Local_momentum)
+'''
+optimizer = tfa.optimizers.Yogi(learning_rate=HyperSet_Server_eta, 
+                                epsilon=HyperSet_Server_tau,
+                                beta1=HyperSet_Server_beta1,
+                                beta2=HyperSet_Server_beta2,
+                                )'''
+#optimizer = tf.keras.optimizers.SGD(learning_rate=HyperSet_Local_eta, momentum=HyperSet_Local_momentum)
+#optimizer = tf.keras.optimizers.Adam() #learning_rate=1e-5
 
 # ---
 # [Build-Model]
 # ---
 tf.keras.backend.clear_session()
 model = myResNet().ResNet18(model_input_shape,model_class_number)
-optimizer = tfa.optimizers.Yogi(learning_rate=HyperSet_Server_eta, 
-                                epsilon=HyperSet_Server_tau,
-                                beta1=HyperSet_Server_beta1,
-                                beta2=HyperSet_Server_beta2,
-                                )
-#optimizer = tf.keras.optimizers.SGD(learning_rate=HyperSet_Local_eta, momentum=HyperSet_Local_momentum)
-#optimizer = tf.keras.optimizers.Adam() #learning_rate=1e-5
+optimizer = HyperSet_optimizer
 model.compile( optimizer, 
         tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), 
         metrics=["accuracy", 'sparse_top_k_categorical_accuracy']) # sparse_top_k_categorical_accuracy, top_k_categorical_accuracy
@@ -153,19 +172,54 @@ checkpoint_folder = secure_mkdir("ckpoint"+"/"+model_name)
 '''保存weight的資料夾'''
 checkpoint_path = checkpoint_folder+"/cp-{epoch:04d}.ckpt"
 '''保存weight的儲存路徑'''
+dataset_size = 50000
+batch_counts_per_epoch = int(dataset_size/HyperSet_Local_batch_size)
+'''steps_per_execution'''
 cp_saver = tf.keras.callbacks.ModelCheckpoint(filepath=checkpoint_path,
                                                  save_weights_only=True,
                                                  verbose=2,
-                                                 save_freq=100*HyperSet_Local_batch_size*HyperSet_Train_all_connect_client_number) # int:the callback saves the model at end of this many batches.
-'''Create a callback that saves the model's weights every some epochs (save 5 times)'''
-cp_recovery = tf.keras.callbacks.experimental.BackupAndRestore(backup_dir="/tmp/backup"+"/"+model_name)
-'''Store last cp in the tmp forder'''
+                                                 save_freq=100*batch_counts_per_epoch)
+'''儲存機制: 開啟新的Epoch時(訓練前)先儲存，因此cp-0001其實是 epoch == 0的weights
+save_freq: (int) the callback saves the model at end of this many batches.'''
 
+#if prior_model is not None:
+#    tmpbackup_folder = secure_mkdir("/tmp/backup"+"/"+prior_model)
+#    '''暫存cp的資料夾'''
+#    cp_recovery = tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=tmpbackup_folder)
+#else:
+#    tmpbackup_folder = secure_mkdir("/tmp/backup"+"/"+model_name)
+#    '''暫存cp的資料夾'''
+#    cp_recovery = tf.keras.callbacks.experimental.BackupAndRestore(backup_dir=tmpbackup_folder)
+#'''Store last cp in the tmp forder'''
+
+if prior_model is not None:
+    '''cpbackup暫時有bug，因此改用npz暫存檔代替其功能'''
+    weight_npzfile = np.load(f'ckpoint/{prior_model}/interrupt-round-weights.npz')
+    weight_np_unzip = [weight_npzfile[ArrayName] for ArrayName in weight_npzfile.files]
+    '''model weights format is *List of NumPy arrays* '''
+    model.set_weights(weight_np_unzip) # mot use model.load_weights() that's load from file.h5 
+
+TraceCurrentEpoch = 0
+class CustomCallback(tf.keras.callbacks.Callback):
+    '''自訂Callback事件: 此用來追蹤當前執行Epoch
+    Ref.:https://ithelp.ithome.com.tw/articles/10235293'''
+    def __init__(self):
+        self.task_type=''
+        self.epoch=0
+        self.batch=0
+    def on_epoch_begin(self, epoch, logs=None):
+        #print(f"{self.task_type}第 {epoch} 執行週期結束.")
+        # Get epoch  now
+        global TraceCurrentEpoch
+        TraceCurrentEpoch = epoch
+        #print(TraceCurrentEpoch)
+    
 # ---
 # [Load Data]
 # ---
 # Load Server-side test daraset
 server_train_data = myLoadDS(dataset_path+'/server/train/global_train_all', 'tfds')
+#server_train_data = myLoadDS(dataset_path+f'/client/train/client_{1}_train', 'tfds')
 server_test_data = myLoadDS(dataset_path+'/server/test/global_test_all', 'tfds')
 
 """
@@ -173,15 +227,26 @@ server_test_data = myLoadDS(dataset_path+'/server/test/global_test_all', 'tfds')
 """
 try:
   tf.keras.backend.clear_session() #clear keras tmp data
+  if checkpoint_load is not None:
+    '''load model weights'''
+    latest = tf.train.latest_checkpoint(checkpoint_load)
+    model.load_weights(latest)
+    # If load weight.npz
+    #weight_npzfile = np.load(weight.npz)
+    #model.load_weights(weight_npzfile['arr_0'])
+    print(f"Sucessfully load {checkpoint_load}")
   model.save_weights(checkpoint_path.format(epoch=1))
+  print("** checkpoint 001 (init.) saved **")
   history = model.fit(
                   preprocessor.preprocess(server_train_data, rng, train=True, BruteForce_kill_nan=True, add_minmax=False, normal_mode=False),
                   #tfds_train.map(server_train_data, num_parallel_calls=tf.data.AUTOTUNE).batch(HyperSet_Local_batch_size).prefetch(20),
                   epochs=HyperSet_round,
                   verbose=2,
                   validation_data=preprocessor.preprocess(server_test_data, rng, train=False, BruteForce_kill_nan=True, add_minmax=False, normal_mode=False),
-                  callbacks=[cp_recovery, cp_saver],
+                  callbacks=[CustomCallback(), cp_saver], #cp_recovery,
                 )
+  model.save_weights(checkpoint_path.format(epoch=HyperSet_round))
+  print("** checkpoint final saved **")
   # 暫存訓練結果
   Training_result_distributed["loss"] = history.history["loss"]
   Training_result_distributed["accuracy"] = history.history["accuracy"]
@@ -206,7 +271,7 @@ try:
     #model.save(model_path)
 
     # 移除緊急暫存
-    os.rmdir("/tmp/backup"+"/"+model_name)
+    #os.rmdir(tmpbackup_folder)
 
 # 緊急狀況備份
 except KeyboardInterrupt or InterruptedError:
@@ -230,6 +295,7 @@ except KeyboardInterrupt or InterruptedError:
   log_folder = secure_mkdir("FL_log"+"/"+"InterruptSaved_"+model_name)
   log_text = f'*** Centralized Traing Record ***\n \
              *[This training was unexpectly interrupted.]*\n \
+             *[Interrupt at epoch = {TraceCurrentEpoch}]*\n \
              Model Name: {model_name}\n \
              FL Finish Time: {time_str}\n \
              \n--- FL setting ---\n \
@@ -237,7 +303,8 @@ except KeyboardInterrupt or InterruptedError:
              Rounds: {HyperSet_round}\n \
              Traing population: {HyperSet_Train_all_connect_client_number}\n \
              Testing population: {HyperSet_Test_all_connect_client_number}\n \
-             Number of client per round: {HypHyperSet_Train_EveryRound_client_number}\n \
+             Number of client per round (training): {HypHyperSet_Train_EveryRound_client_number}\n \
+             Number of client per round (testing): {HypHyperSet_Test_EveryRound_client_number}\n \
              \n--- Server-side hyperparemeter ---\n \
              Learning-rate: {HyperSet_Server_eta}\n \
              Tau: {HyperSet_Server_tau}\n \
@@ -271,7 +338,8 @@ if SAVE:
              f'Rounds: {HyperSet_round}\n' \
              f'Traing population: {HyperSet_Train_all_connect_client_number}\n' \
              f'Testing population: {HyperSet_Test_all_connect_client_number}\n' \
-             f'Number of client per round: {HypHyperSet_Train_EveryRound_client_number}\n' \
+             f'Number of client per round (training): {HypHyperSet_Train_EveryRound_client_number}\n' \
+             f'Number of client per round (testing): {HypHyperSet_Test_EveryRound_client_number}\n' \
              f'\n--- Server-side hyperparemeter ---\n' \
              f'Learning-rate: {HyperSet_Server_eta}\n' \
              f'Tau: {HyperSet_Server_tau}\n' \

@@ -7,14 +7,14 @@ def ServerArg():
     parser.add_argument("-m", "--mode", 
                         type=int, choices=range(0, 3), required=True,
                         help="\"0\" to start a new trainig,\n"
-                             "\"1\" to recovery this model from prior record,\n"\
+                             "\"1\" to recovery this model from prior temporary record,\n"\
                              "\"2\" to load other checkpoints (weights).\n")
     parser.add_argument("-n", "--name", 
                         type=str, required=False,
                         help="Give model a unique name.")
-    parser.add_argument("-pp", "--prior_path", 
+    parser.add_argument("-pmn", "--prior_model_name", 
                         type=str, required=False,
-                        help="If model = 1, input the prior model storage file path.")
+                        help="If model = 1, input the prior model name.")
     parser.add_argument("-cp", "--checkpoint_path", 
                         type=str, required=False,
                         help="If model = 2, input the other checkpoint storage file path.")
@@ -27,8 +27,8 @@ def ServerArg():
                         help="To use specific gpu device")
     args = parser.parse_args()
 
-    if args.mode == 1 and args.prior_path is None:
-        raise Exception("If model = 1, --prior_path (-pp) is required.")
+    if args.mode == 1 and args.prior_model_name is None:
+        raise Exception("If model = 1, --prior_model_name (-pmn) is required.")
     elif args.mode == 2 and args.checkpoint_path is None:
         raise Exception("If model = 2, --checkpoint_path (-cp) is required.")
     return args
