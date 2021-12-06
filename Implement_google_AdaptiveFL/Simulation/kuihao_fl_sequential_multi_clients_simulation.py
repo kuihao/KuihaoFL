@@ -362,7 +362,8 @@ except KeyboardInterrupt or InterruptedError:
              Rounds: {HyperSet_round}\n \
              Traing population: {HyperSet_Train_all_connect_client_number}\n \
              Testing population: {HyperSet_Test_all_connect_client_number}\n \
-             Number of client per round: {HypHyperSet_Train_EveryRound_client_number}\n \
+             Number of client per round (training): {HypHyperSet_Train_EveryRound_client_number}\n \
+             Number of client per round (testing): {HypHyperSet_Test_EveryRound_client_number}\n \
              \n--- Server-side hyperparemeter ---\n \
              Learning-rate: {HyperSet_Server_eta}\n \
              Tau: {HyperSet_Server_tau}\n \
@@ -402,7 +403,8 @@ if SAVE:
              f'Rounds: {HyperSet_round}\n' \
              f'Traing population: {HyperSet_Train_all_connect_client_number}\n' \
              f'Testing population: {HyperSet_Test_all_connect_client_number}\n' \
-             f'Number of client per round: {HypHyperSet_Train_EveryRound_client_number}\n' \
+             f'Number of client per round (training): {HypHyperSet_Train_EveryRound_client_number}\n' \
+             f'Number of client per round (testing): {HypHyperSet_Test_EveryRound_client_number}\n' \
              f'\n--- Server-side hyperparemeter ---\n' \
              f'Learning-rate: {HyperSet_Server_eta}\n' \
              f'Tau: {HyperSet_Server_tau}\n' \
