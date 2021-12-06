@@ -1,0 +1,42 @@
+*** Centralized Traing Record ***
+Model Name: 12_05_2021__17_07_30_test_saving_200round_centro_cifar100_noniid_resnet18_fedyogi
+FL Finish Time: 12_05_2021__23_25_24
+
+--- FL setting ---
+Aggregation: FedYogi_Aggregate
+Rounds: 400
+Traing population: 500
+Testing population: 100
+Number of client per round: 500
+
+--- Server-side hyperparemeter ---
+Learning-rate: 0.1
+Tau: 0.1
+Beta-1: 0.9
+Beta-2: 0.99
+
+--- Client-side hyperparemeter ---
+Learning-rate: 0.31622776601683794
+Momentum: 0.9
+Local epoch: 1
+Local batch size: 20
+
+--- Other env. setting ---
+Random Seed: 2021
+
+--- Result ---
+--Last result--
+             *Last Train Acc.: 0.968940019607544
+              Last Train TopK-Acc.: 0.9984999895095825
+              Last Train Loss: 0.1032436266541481
+              *Last Test Acc.: 0.1793999969959259
+              Last Test TopK-Acc.: 0.39010000228881836
+              Last Test Loss: 8.92987060546875
+--Avg last 100 rounds result--
+*Train Acc. (Avg last 100 rounds): 0.9607066023349762
+Train TopK-Acc. (Avg last 100 rounds): 0.998021000623703
+Train Loss (Avg last 100 rounds): 0.12773135662078858
+*Test Acc. (Avg last 100 rounds): 0.19053199887275696
+Test TopK-Acc. (Avg last 100 rounds): 0.4125020006299019
+Test Loss (Avg last 100 rounds): 8.087158007621765
+
